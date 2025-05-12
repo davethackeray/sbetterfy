@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Set Up Spotify | Spotify AI Recommendations</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">Spotify AI Recommendations</div>
+            <div class="user-info">
+                <a href="{{ url_for('index') }}" class="btn btn-small">Back to Home</a>
+            </div>
+        </header>
+        
+        <main class="setup-container">
+            <h1>Set Up Your Spotify Developer Account</h1>
+            
+            <div class="setup-steps">
+                <div class="step" id="step-1">
+                    <div class="step-header">
+                        <div class="step-number">1</div>
+                        <h2>Create a Spotify Developer Account</h2>
+                    </div>
+                    <div class="step-content">
+                        <p>You'll need to create a Spotify Developer application to use this service:</p>
+                        <ol>
+                            <li>Visit <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener noreferrer">Spotify Developer Dashboard</a></li>
+                            <li>Sign in with your Spotify account</li>
+                            <li>Click "Create app"</li>
+                            <li>Fill in the app details:
+                                <ul>
+                                    <li>App name: "AI Music Recommendations" (or any name you prefer)</li>
+                                    <li>App description: "Personal app for AI music recommendations"</li>
+                                    <li>Redirect URI: <code>{{ base_url }}/callback</code></li>
+                                    <li>Website: <code>{{ base_url }}</code></li>
+                                </ul>
+                            </li>
+                            <li>Accept the terms and click "Save"</li>
+                        </ol>
+                        <button class="btn btn-next" data-next="step-2">Next Step</button>
+                    </div>
+                </div>
+                
+                <div class="step hidden" id="step-2">
+                    <div class="step-header">
+                        <div class="step-number">2</div>
+                        <h2>Get Your Spotify Credentials</h2>
+                    </div>
+                    <div class="step-content">
+                        <p>Now you need to get your Spotify Client ID and Client Secret:</p>
+                        <ol>
+                            <li>In your Spotify Developer Dashboard, click on your app</li>
+                            <li>You'll see your Client ID displayed on the page</li>
+                            <li>Click "Show Client Secret" to reveal your Client Secret</li>
+                            <li>Copy both values - you'll need them in the next step</li>
+                        </ol>
+                        <div class="buttons-row">
+                            <button class="btn btn-back" data-prev="step-1">Previous Step</button>
+                            <button class="btn btn-next" data-next="step-3">Next Step</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step hidden" id="step-3">
+                    <div class="step-header">
+                        <div class="step-number">3</div>
+                        <h2>Enter Your Spotify Credentials</h2>
+                    </div>
+                    <div class="step-content">
+                        <p>Enter your Spotify Client ID and Client Secret below:</p>
+                        <div class="spotify-creds-form">
+                            <div class="form-group">
+                                <label for="client-id-input">Client ID</label>
+                                <input type="text" id="client-id-input" placeholder="Paste your Client ID here" />
+                            </div>
+                            <div class="form-group">
+                                <label for="client-secret-input">Client Secret</label>
+                                <input type="password" id="client-secret-input" placeholder="Paste your Client Secret here" />
+                            </div>
+                            <div id="spotify-creds-error" class="error-message hidden"></div>
+                            <div class="buttons-row">
+                                <button class="btn btn-back" data-prev="step-2">Previous Step</button>
+                                <button id="save-spotify-creds-btn" class="btn btn-primary">Save Credentials</button>
+                            </div>
+                        </div>
+                        <div id="spotify-success-message" class="success-message hidden">
+                            <p>✅ Spotify credentials saved successfully!</p>
+                            <a href="{{ url_for('authorize_spotify') }}" class="btn btn-primary">Connect with Spotify</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/setup_spotify.js') }}"></script>
+</body>
+</html>

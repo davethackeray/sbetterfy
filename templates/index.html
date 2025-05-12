@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify AI Recommendations</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <h1>Discover Your Next Favorite Song</h1>
+            <p class="subtitle">AI-powered music recommendations based on your Spotify likes</p>
+            
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">🎵</div>
+                    <h3>Personalized</h3>
+                    <p>Recommendations tailored to your unique taste</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🔍</div>
+                    <h3>Discover</h3>
+                    <p>Find hidden gems you might have missed</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🎧</div>
+                    <h3>Create</h3>
+                    <p>Generate playlists with one click</p>
+                </div>
+            </div>
+            
+            <a href="{{ url_for('login') }}" class="btn btn-primary">Connect with Spotify</a>
+        </div>
+        
+        <div class="how-it-works">
+            <h2>How It Works</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Connect Spotify</h3>
+                    <p>Link your Spotify account to analyze your liked songs</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>Set Preferences</h3>
+                    <p>Choose your discovery level, genres, and more</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Get Recommendations</h3>
+                    <p>Receive AI-generated song recommendations</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <h3>Create Playlists</h3>
+                    <p>Save your discoveries directly to Spotify</p>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Powered by Google AI and Spotify API</p>
+            <p>© 2025 Spotify AI Recommendations</p>
+        </footer>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

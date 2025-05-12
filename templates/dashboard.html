@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Spotify AI Recommendations</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">Spotify AI Recommendations</div>
+            <div class="user-info">
+                <span>{{ display_name }}</span>
+                <a href="{{ url_for('logout') }}" class="btn btn-small">Logout</a>
+            </div>
+        </header>
+        
+        <main class="dashboard">
+            {% if not has_api_key %}
+            <div class="api-key-banner">
+                <p>You need to set up your Google AI API key to use this service.</p>
+                <a href="{{ url_for('setup_api') }}" class="btn btn-primary">Set Up API Key</a>
+            </div>
+            {% else %}
+            <div class="controls-panel">
+                <h2>Generate Recommendations</h2>
+                
+                <div class="control-group">
+                    <label for="count">Number of Songs</label>
+                    <div class="slider-container">
+                        <input type="range" id="count" min="5" max="50" value="20" class="slider">
+                        <span class="slider-value" id="count-value">20</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label for="discovery">Discovery Level</label>
+                    <div class="slider-container">
+                        <input type="range" id="discovery" min="0" max="100" value="50" class="slider">
+                        <span class="slider-value" id="discovery-value">50</span>
+                    </div>
+                    <div class="slider-labels">
+                        <span>Similar</span>
+                        <span>Adventurous</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label for="year">Earliest Year</label>
+                    <div class="slider-container">
+                        <input type="range" id="year" min="1950" max="2025" value="2000" class="slider">
+                        <span class="slider-value" id="year-value">2000</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label for="popularity">Max Popularity</label>
+                    <div class="slider-container">
+                        <input type="range" id="popularity" min="0" max="100" value="80" class="slider">
+                        <span class="slider-value" id="popularity-value">80</span>
+                    </div>
+                    <div class="slider-labels">
+                        <span>Obscure</span>
+                        <span>Popular</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Genres (Optional)</label>
+                    <div class="genre-selector" id="genre-selector">
+                        <div class="genre-chip" data-genre="pop">Pop</div>
+                        <div class="genre-chip" data-genre="rock">Rock</div>
+                        <div class="genre-chip" data-genre="hip-hop">Hip Hop</div>
+                        <div class="genre-chip" data-genre="electronic">Electronic</div>
+                        <div class="genre-chip" data-genre="indie">Indie</div>
+                        <div class="genre-chip" data-genre="r&b">R&B</div>
+                        <div class="genre-chip" data-genre="jazz">Jazz</div>
+                        <div class="genre-chip" data-genre="classical">Classical</div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Moods (Optional)</label>
+                    <div class="mood-selector" id="mood-selector">
+                        <div class="mood-chip" data-mood="energetic">Energetic</div>
+                        <div class="mood-chip" data-mood="chill">Chill</div>
+                        <div class="mood-chip" data-mood="happy">Happy</div>
+                        <div class="mood-chip" data-mood="melancholic">Melancholic</div>
+                        <div class="mood-chip" data-mood="romantic">Romantic</div>
+                        <div class="mood-chip" data-mood="dark">Dark</div>
+                    </div>
+                </div>
+                
+                <button id="generate-btn" class="btn btn-primary">Generate Recommendations</button>
+            </div>
+            
+            <div class="results-panel">
+                <div id="loading" class="loading-container hidden">
+                    <div class="loading-spinner"></div>
+                    <p>Generating your personalized recommendations...</p>
+                </div>
+                
+                <div id="recommendations" class="recommendations-container hidden">
+                    <div class="recommendations-header">
+                        <h2>Your Recommendations</h2>
+                        <div class="actions">
+                            <button id="create-playlist-btn" class="btn">Create Playlist</button>
+                        </div>
+                    </div>
+                    
+                    <div id="tracks-container" class="tracks-container"></div>
+                </div>
+                
+                <div id="empty-state" class="empty-state">
+                    <div class="empty-icon">🎵</div>
+                    <h3>Ready to discover new music?</h3>
+                    <p>Adjust the controls and click "Generate Recommendations" to get started.</p>
+                </div>
+                
+                <div id="error-state" class="error-state hidden">
+                    <div class="error-icon">❌</div>
+                    <h3>Something went wrong</h3>
+                    <p id="error-message">There was an error generating your recommendations.</p>
+                    <button id="try-again-btn" class="btn">Try Again</button>
+                </div>
+            </div>
+            {% endif %}
+        </main>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
