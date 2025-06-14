@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "guidelines": {
+    "roadmap_adherence": {
+      "description": "Ensure all actions and tasks align with the defined project roadmap to achieve long-term goals.",
+      "rule": "Prioritize tasks that contribute directly to roadmap milestones. Any deviation must be justified with clear benefits to the project and approved by stakeholders."
+    },
+    "task_specificity": {
+      "description": "Break down tasks into granular, actionable steps to maintain clarity and focus during implementation.",
+      "rule": "Decompose tasks into smaller, well-defined sub-tasks with clear objectives and deliverables. Each sub-task should be independently verifiable."
+    },
+    "deep_analysis": {
+      "description": "Conduct thorough analysis of potential impacts on the codebase before making any modifications.",
+      "rule": "Before implementing changes, analyze dependencies, potential side effects, and compatibility with existing systems. Document findings and mitigation strategies for identified risks."
+    },
+    "frequent_testing": {
+      "description": "Enforce immediate testing after changes to validate functionality and catch issues early.",
+      "rule": "Run unit tests, integration tests, and manual checks (if applicable) after each significant code change. Do not proceed to the next task until test coverage is satisfactory and issues are resolved."
+    },
+    "regular_commits": {
+      "description": "Encourage frequent commits to GitHub with descriptive messages to track progress and maintain version control.",
+      "rule": "Commit changes to GitHub at logical breakpoints, ideally after completing a sub-task or resolving an issue. Use descriptive commit messages that summarize the purpose and impact of changes."
+    }
+  },
+  "enforcement": {
+    "compliance_check": "Before any code change, review these guidelines to ensure compliance. Non-compliance must be escalated for review.",
+    "audit_frequency": "Weekly review of adherence to guidelines during development cycles."
+  },
+  "notes": "These guidelines are designed to minimize technical debt, ensure high-quality outputs, and maintain a 'clean as you go' culture in line with project objectives."
+}

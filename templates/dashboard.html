@@ -5,130 +5,238 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | Spotify AI Recommendations</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .tab-btn {
+            background-color: var(--background-base);
+            color: var(--text-base);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem 0.5rem 0 0;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            margin-bottom: -1px;
+            border: 1px solid transparent;
+        }
+        .tab-btn.active {
+            background-color: var(--background-elevated);
+            color: var(--primary-color);
+            border-color: var(--border-color);
+            border-bottom: 1px solid transparent;
+        }
+        .tab-content {
+            display: none;
+            background-color: var(--background-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 0 0.5rem 0.5rem 0.5rem;
+            padding: 1.5rem;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .track-card {
+            background-color: var(--background-base);
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            align-items: center;
+        }
+        .track-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(29, 185, 84, 0.2);
+        }
+        .track-image {
+            width: 48px;
+            height: 48px;
+            border-radius: 0.25rem;
+            margin-right: 1rem;
+        }
+        .track-info {
+            flex: 1;
+        }
+        .select-all-btn {
+            cursor: pointer;
+            color: var(--primary-color);
+            font-size: 0.875rem;
+            margin-left: 0.5rem;
+        }
+        .create-playlist-btn {
+            background-color: var(--primary-color);
+            color: white;
+            transition: background-color 0.2s ease;
+        }
+        .create-playlist-btn:hover {
+            background-color: #1AA34A;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary-color);
+            width: 30px;
+            height: 30px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
     <div class="app-container">
         <header>
             <div class="logo">Spotify AI Recommendations</div>
             <div class="user-info">
-                <span>{{ display_name }}</span>
+                <span class="username">{{ display_name }}</span>
                 <a href="{{ url_for('logout') }}" class="btn btn-small">Logout</a>
             </div>
         </header>
         
-        <main class="dashboard">
-            {% if not has_api_key %}
-            <div class="api-key-banner">
-                <p>You need to set up your Google AI API key to use this service.</p>
-                <a href="{{ url_for('setup_api') }}" class="btn btn-primary">Set Up API Key</a>
-            </div>
-            {% else %}
-            <div class="controls-panel">
-                <h2>Generate Recommendations</h2>
-                
-                <div class="control-group">
-                    <label for="count">Number of Songs</label>
-                    <div class="slider-container">
-                        <input type="range" id="count" min="5" max="50" value="20" class="slider">
-                        <span class="slider-value" id="count-value">20</span>
-                    </div>
-                </div>
-                
-                <div class="control-group">
-                    <label for="discovery">Discovery Level</label>
-                    <div class="slider-container">
-                        <input type="range" id="discovery" min="0" max="100" value="50" class="slider">
-                        <span class="slider-value" id="discovery-value">50</span>
-                    </div>
-                    <div class="slider-labels">
-                        <span>Similar</span>
-                        <span>Adventurous</span>
-                    </div>
-                </div>
-                
-                <div class="control-group">
-                    <label for="year">Earliest Year</label>
-                    <div class="slider-container">
-                        <input type="range" id="year" min="1950" max="2025" value="2000" class="slider">
-                        <span class="slider-value" id="year-value">2000</span>
-                    </div>
-                </div>
-                
-                <div class="control-group">
-                    <label for="popularity">Max Popularity</label>
-                    <div class="slider-container">
-                        <input type="range" id="popularity" min="0" max="100" value="80" class="slider">
-                        <span class="slider-value" id="popularity-value">80</span>
-                    </div>
-                    <div class="slider-labels">
-                        <span>Obscure</span>
-                        <span>Popular</span>
-                    </div>
-                </div>
-                
-                <div class="control-group">
-                    <label>Genres (Optional)</label>
-                    <div class="genre-selector" id="genre-selector">
-                        <div class="genre-chip" data-genre="pop">Pop</div>
-                        <div class="genre-chip" data-genre="rock">Rock</div>
-                        <div class="genre-chip" data-genre="hip-hop">Hip Hop</div>
-                        <div class="genre-chip" data-genre="electronic">Electronic</div>
-                        <div class="genre-chip" data-genre="indie">Indie</div>
-                        <div class="genre-chip" data-genre="r&b">R&B</div>
-                        <div class="genre-chip" data-genre="jazz">Jazz</div>
-                        <div class="genre-chip" data-genre="classical">Classical</div>
-                    </div>
-                </div>
-                
-                <div class="control-group">
-                    <label>Moods (Optional)</label>
-                    <div class="mood-selector" id="mood-selector">
-                        <div class="mood-chip" data-mood="energetic">Energetic</div>
-                        <div class="mood-chip" data-mood="chill">Chill</div>
-                        <div class="mood-chip" data-mood="happy">Happy</div>
-                        <div class="mood-chip" data-mood="melancholic">Melancholic</div>
-                        <div class="mood-chip" data-mood="romantic">Romantic</div>
-                        <div class="mood-chip" data-mood="dark">Dark</div>
-                    </div>
-                </div>
-                
-                <button id="generate-btn" class="btn btn-primary">Generate Recommendations</button>
-            </div>
+        <main class="dashboard-container">
+            <h1 class="page-title">Welcome, {{ display_name }}!</h1>
             
-            <div class="results-panel">
-                <div id="loading" class="loading-container hidden">
-                    <div class="loading-spinner"></div>
-                    <p>Generating your personalized recommendations...</p>
-                </div>
-                
-                <div id="recommendations" class="recommendations-container hidden">
-                    <div class="recommendations-header">
-                        <h2>Your Recommendations</h2>
-                        <div class="actions">
-                            <button id="create-playlist-btn" class="btn">Create Playlist</button>
-                        </div>
-                    </div>
-                    
-                    <div id="tracks-container" class="tracks-container"></div>
-                </div>
-                
-                <div id="empty-state" class="empty-state">
-                    <div class="empty-icon">🎵</div>
-                    <h3>Ready to discover new music?</h3>
-                    <p>Adjust the controls and click "Generate Recommendations" to get started.</p>
-                </div>
-                
-                <div id="error-state" class="error-state hidden">
-                    <div class="error-icon">❌</div>
-                    <h3>Something went wrong</h3>
-                    <p id="error-message">There was an error generating your recommendations.</p>
-                    <button id="try-again-btn" class="btn">Try Again</button>
-                </div>
+            {% if not has_api_key %}
+            <div class="setup-notice bg-red-500 text-white p-4 rounded-lg mb-6">
+                <p class="font-medium">You haven't set up your Google AI API key yet. This is required for generating recommendations.</p>
+                <a href="{{ url_for('setup_api') }}" class="btn btn-primary mt-2">Set Up API Key</a>
             </div>
             {% endif %}
+            
+            <div class="dashboard-content mt-6">
+                <div class="tabs">
+                    <div class="tab-buttons flex">
+                        <button class="tab-btn active" data-tab="recommendations">Recommendations</button>
+                        <button class="tab-btn" data-tab="settings">Settings</button>
+                    </div>
+                    <div class="tab-contents">
+                        <div id="recommendations" class="tab-content active">
+                            <div class="recommendations-panel bg-gray-800 p-6 rounded-lg shadow-lg">
+                                <h2 class="text-xl font-semibold mb-6 text-white">Generate Recommendations</h2>
+                                <div class="recommendation-controls grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="control-group">
+                                        <label for="count" class="block mb-2 font-medium text-gray-300">Number of Tracks</label>
+                                        <input type="number" id="count" value="20" min="1" max="50" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
+                                    </div>
+                                    <div class="control-group">
+                                        <label for="discovery-level" class="block mb-2 font-medium text-gray-300">Discovery Level (0-100)</label>
+                                        <input type="number" id="discovery-level" value="50" min="0" max="100" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
+                                        <p class="text-xs text-gray-400 mt-1">0 = Familiar tracks, 100 = New discoveries</p>
+                                    </div>
+                                    <div class="control-group">
+                                        <label for="min-year" class="block mb-2 font-medium text-gray-300">Minimum Year</label>
+                                        <input type="number" id="min-year" value="1900" min="1900" max="2025" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
+                                    </div>
+                                    <div class="control-group">
+                                        <label for="max-popularity" class="block mb-2 font-medium text-gray-300">Maximum Popularity (0-100)</label>
+                                        <input type="number" id="max-popularity" value="100" min="0" max="100" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
+                                        <p class="text-xs text-gray-400 mt-1">Lower values = Less popular tracks</p>
+                                    </div>
+                                    <div class="control-group">
+                                        <label for="target-tempo" class="block mb-2 font-medium text-gray-300">Target Tempo (BPM, 40-200)</label>
+                                        <input type="number" id="target-tempo" value="120" min="40" max="200" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
+                                        <p class="text-xs text-gray-400 mt-1">Approximate beats per minute</p>
+                                    </div>
+                                    <div class="control-group">
+                                        <label for="target-energy" class="block mb-2 font-medium text-gray-300">Target Energy (0-100)</label>
+                                        <input type="number" id="target-energy" value="50" min="0" max="100" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
+                                        <p class="text-xs text-gray-400 mt-1">0 = Calm, 100 = High energy</p>
+                                    </div>
+                                    <div class="control-group col-span-1 md:col-span-2">
+                                        <label for="genres" class="block mb-2 font-medium text-gray-300">Genres (comma-separated)</label>
+                                        <input type="text" id="genres" placeholder="e.g., pop, rock, indie" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
+                                    </div>
+>>>>>>> REPLACE
+                                    <div class="control-group col-span-1 md:col-span-2">
+                                        <label for="moods" class="block mb-2 font-medium text-gray-300">Moods (comma-separated)</label>
+                                        <input type="text" id="moods" placeholder="e.g., happy, chill, energetic" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
+                                    </div>
+                                </div>
+                                <button id="generate-btn" class="btn btn-primary create-playlist-btn mt-6 px-6 py-3 rounded-full text-lg font-semibold">Generate Recommendations</button>
+                                
+                                <div id="recommendations-results" class="recommendations-results mt-8 hidden">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h3 class="text-lg font-medium text-white">Recommended Tracks</h3>
+                                        <div class="flex items-center">
+                                            <button id="select-all-btn" class="select-all-btn">Select All</button>
+                                            <button id="create-playlist-btn" class="btn btn-primary create-playlist-btn ml-4 px-4 py-2 rounded-full">Create Playlist</button>
+                                        </div>
+                                    </div>
+                                    <div id="tracks-container" class="tracks-container grid grid-cols-1 gap-4"></div>
+                                    <div id="no-tracks-message" class="no-tracks-message hidden text-center py-8 text-gray-400">
+                                        <p>No tracks available. Adjust your parameters and try again.</p>
+                                    </div>
+                                </div>
+                                <div id="loading-indicator" class="loading-indicator hidden text-center py-8">
+                                    <div class="loading-spinner"></div>
+                                    <p class="text-gray-300 mt-2">Generating recommendations...</p>
+                                </div>
+                                <div id="error-message" class="error-message hidden text-red-500 mt-4"></div>
+                            </div>
+                        </div>
+                        <div id="settings" class="tab-content">
+                            <div class="settings-panel">
+                                <h2 class="text-xl font-semibold mb-6 text-white">Account Settings</h2>
+                                <div class="setting-group mb-6">
+                                    <h3 class="text-lg font-medium mb-2 text-gray-300">Spotify Connection</h3>
+                                    <p class="text-gray-400 mb-4">Connected as: <span class="font-medium text-green-400">{{ display_name }}</span></p>
+                                    <a href="{{ url_for('logout') }}" class="btn btn-danger bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full">Disconnect Spotify Account</a>
+                                </div>
+                                <div class="setting-group mb-6">
+                                    <h3 class="text-lg font-medium mb-2 text-gray-300">Google AI API Key</h3>
+                                    {% if has_api_key %}
+                                        <p class="text-gray-400 mb-4">Status: <span class="font-medium text-green-400">Configured</span></p>
+                                        <a href="{{ url_for('setup_api') }}" class="btn btn-secondary bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-full">Update API Key</a>
+                                    {% else %}
+                                        <p class="text-gray-400 mb-4">Status: <span class="font-medium text-red-400">Not Configured</span></p>
+                                        <a href="{{ url_for('setup_api') }}" class="btn btn-primary bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full">Set Up API Key</a>
+                                    {% endif %}
+                                </div>
+                                <div class="setting-group mb-6">
+                                    <h3 class="text-lg font-medium mb-2 text-gray-300">User Feedback</h3>
+                                    <p class="text-gray-400 mb-4">Help us improve your experience. Rate the new UI and share your thoughts:</p>
+                                    <form id="feedback-form" class="space-y-4">
+                                        <div class="control-group">
+                                            <label for="ui-rating" class="block mb-2 font-medium text-gray-300">UI Experience Rating (1-5)</label>
+                                            <select id="ui-rating" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
+                                                <option value="5">5 - Excellent</option>
+                                                <option value="4">4 - Very Good</option>
+                                                <option value="3" selected>3 - Good</option>
+                                                <option value="2">2 - Fair</option>
+                                                <option value="1">1 - Poor</option>
+                                            </select>
+                                        </div>
+                                        <div class="control-group">
+                                            <label for="feedback-comments" class="block mb-2 font-medium text-gray-300">Comments or Suggestions</label>
+                                            <textarea id="feedback-comments" placeholder="Share any additional feedback or issues..." rows="3" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500"></textarea>
+                                        </div>
+                                        <div id="feedback-error" class="error-message hidden text-red-500 mb-2"></div>
+                                        <div id="feedback-success" class="success-message hidden text-green-400 mb-2">Thank you for your feedback!</div>
+                                        <button type="submit" id="submit-feedback-btn" class="btn btn-primary bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full">Submit Feedback</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+>>>>>>> REPLACE
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
     
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script>
+        document.querySelectorAll('.tab-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                // Update tab buttons
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                // Show corresponding content
+                const tabId = button.getAttribute('data-tab');
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+    </script>
 </body>
 </html>

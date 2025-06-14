@@ -11,6 +11,12 @@ class SpotifyService:
         self.redirect_uri = os.environ.get('BASE_URL', '') + '/callback'
         self.tokens = tokens
         self.base_url = 'https://api.spotify.com/v1'
+        # In-memory cache for API responses
+        self._cache = {}
+        # Cache expiration time in seconds (e.g., 5 minutes)
+        self._cache_expiry = 300
+        # Track cache timestamps
+        self._cache_timestamps = {}
     
     def get_auth_url(self, state=None):
         """Generate the Spotify authorization URL"""
@@ -84,10 +90,45 @@ class SpotifyService:
         
         return True
     
+    def _get_cache_key(self, endpoint, params=None):
+        """Generate a unique cache key based on endpoint and parameters"""
+        key = endpoint
+        if params:
+            # Sort params to ensure consistent keys regardless of order
+            sorted_params = sorted(params.items(), key=lambda x: x[0])
+            key += ":" + urllib.parse.urlencode(sorted_params)
+        return key
+
+    def _get_from_cache(self, key):
+        """Retrieve data from cache if it exists and is not expired"""
+        import time
+        if key in self._cache:
+            timestamp = self._cache_timestamps.get(key, 0)
+            if time.time() - timestamp < self._cache_expiry:
+                return self._cache[key]
+            else:
+                # Remove expired cache entry
+                del self._cache[key]
+                del self._cache_timestamps[key]
+        return None
+
+    def _set_to_cache(self, key, data):
+        """Store data in cache with a timestamp"""
+        import time
+        self._cache[key] = data
+        self._cache_timestamps[key] = time.time()
+
     def make_api_request(self, endpoint, method='GET', data=None, params=None):
-        """Make a request to the Spotify API with automatic token refresh"""
+        """Make a request to the Spotify API with automatic token refresh and caching for GET requests"""
         if not self.tokens:
             return None
+        
+        # For GET requests, check cache first
+        if method == 'GET':
+            cache_key = self._get_cache_key(endpoint, params)
+            cached_response = self._get_from_cache(cache_key)
+            if cached_response is not None:
+                return cached_response
         
         url = f"{self.base_url}/{endpoint}"
         headers = {'Authorization': f"Bearer {self.tokens['access_token']}"}
@@ -111,7 +152,12 @@ class SpotifyService:
             if response.status_code not in (200, 201):
                 return None
             
-            return response.json()
+            response_data = response.json()
+            # Cache successful GET responses
+            if method == 'GET':
+                self._set_to_cache(cache_key, response_data)
+            
+            return response_data
         except Exception:
             return None
     

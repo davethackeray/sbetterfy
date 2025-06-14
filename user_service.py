@@ -6,8 +6,14 @@ class UserService:
     def __init__(self):
         self.master_key = os.environ.get('MASTER_ENCRYPTION_KEY')
         if not self.master_key:
-            raise ValueError("MASTER_ENCRYPTION_KEY environment variable not set")
-        
+            # Fallback to a local key file for development purposes
+            key_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dev_master_key.txt')
+            if os.path.exists(key_file_path):
+                with open(key_file_path, 'r') as key_file:
+                    self.master_key = key_file.read().strip()
+            else:
+                raise ValueError("MASTER_ENCRYPTION_KEY environment variable not set and no local key file found at 'dev_master_key.txt'")
+    
     def _get_user_cipher(self, user_id):
         conn = get_db_connection()
         user = conn.execute('SELECT encryption_key FROM users WHERE id = ?', (user_id,)).fetchone()

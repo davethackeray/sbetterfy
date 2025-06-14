@@ -40,26 +40,29 @@ class RecommendationService:
             response = self.model.generate_content(prompt)
             recommendations = self._parse_recommendations(response.text)
             
-            # Verify songs on Spotify
+            # Verify songs on Spotify in batches to reduce API call overhead
             verified_recommendations = []
-            for rec in recommendations:
-                query = f"track:{rec['title']} artist:{rec['artist']}"
-                search_results = spotify_service.search_tracks(query, limit=1)
-                
-                if search_results:
-                    track = search_results[0]
-                    verified_recommendations.append({
-                        'title': track['name'],
-                        'artist': track['artist'],
-                        'uri': track['uri'],
-                        'album': track['album'],
-                        'release_date': track['release_date'],
-                        'popularity': track['popularity'],
-                        'preview_url': track.get('preview_url')
-                    })
-                
-                if len(verified_recommendations) >= count:
-                    break
+            batch_size = 5  # Process multiple searches in a batch
+            for i in range(0, len(recommendations), batch_size):
+                batch = recommendations[i:i + batch_size]
+                for rec in batch:
+                    query = f"track:{rec['title']} artist:{rec['artist']}"
+                    search_results = spotify_service.search_tracks(query, limit=1)
+                    
+                    if search_results:
+                        track = search_results[0]
+                        verified_recommendations.append({
+                            'title': track['name'],
+                            'artist': track['artist'],
+                            'uri': track['uri'],
+                            'album': track['album'],
+                            'release_date': track['release_date'],
+                            'popularity': track['popularity'],
+                            'preview_url': track.get('preview_url')
+                        })
+                    
+                    if len(verified_recommendations) >= count:
+                        return verified_recommendations
             
             return verified_recommendations
         except Exception as e:

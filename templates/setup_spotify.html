@@ -5,6 +5,88 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Set Up Spotify | Spotify AI Recommendations</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .progress-bar {
+            height: 0.5rem;
+            background-color: #e5e7eb;
+            border-radius: 0.25rem;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #1DB954;
+            transition: width 0.3s ease;
+        }
+        .step-card {
+            background-color: var(--background-elevated);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--box-shadow);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .step-card.hidden {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .step-card.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .instruction-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+        .instruction-icon {
+            background-color: #1DB954;
+            color: white;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.75rem;
+            font-weight: bold;
+        }
+        .collapsible-toggle {
+            cursor: pointer;
+            color: var(--primary-color);
+            margin-top: 0.5rem;
+            display: inline-block;
+        }
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .collapsible-content.expanded {
+            max-height: 500px;
+        }
+        .input-feedback {
+            position: relative;
+        }
+        .input-feedback input {
+            padding-right: 2.5rem;
+        }
+        .feedback-icon {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2rem;
+            display: none;
+        }
+        .feedback-icon.valid {
+            color: var(--success-color);
+        }
+        .feedback-icon.invalid {
+            color: var(--error-color);
+        }
+    </style>
 </head>
 <body>
     <div class="app-container">
@@ -15,80 +97,123 @@
             </div>
         </header>
         
-        <main class="setup-container">
-            <h1>Set Up Your Spotify Developer Account</h1>
+        <main class="setup-container mx-auto max-w-3xl p-6">
+            <h1 class="text-center text-2xl md:text-3xl font-bold mb-6 text-white">Set Up Your Spotify Developer Account</h1>
             
-            <div class="setup-steps">
-                <div class="step" id="step-1">
-                    <div class="step-header">
-                        <div class="step-number">1</div>
-                        <h2>Create a Spotify Developer Account</h2>
+            <div class="progress-bar">
+                <div id="progress-fill" class="progress-fill" style="width: 33.33%;"></div>
+            </div>
+
+            <div id="wizard" class="setup-wizard space-y-4">
+                <div id="step-1" class="step-card active">
+                    <div class="step-header flex items-center mb-4">
+                        <div class="step-number bg-green-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold mr-4">1</div>
+                        <h2 class="text-xl font-semibold text-white">Create a Spotify Developer Account</h2>
                     </div>
                     <div class="step-content">
-                        <p>You'll need to create a Spotify Developer application to use this service:</p>
-                        <ol>
-                            <li>Visit <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener noreferrer">Spotify Developer Dashboard</a></li>
-                            <li>Sign in with your Spotify account</li>
-                            <li>Click "Create app"</li>
-                            <li>Fill in the app details:
-                                <ul>
-                                    <li>App name: "AI Music Recommendations" (or any name you prefer)</li>
-                                    <li>App description: "Personal app for AI music recommendations"</li>
-                                    <li>Redirect URI: <code>{{ base_url }}/callback</code></li>
-                                    <li>Website: <code>{{ base_url }}</code></li>
-                                </ul>
-                            </li>
-                            <li>Accept the terms and click "Save"</li>
-                        </ol>
-                        <button class="btn btn-next" data-next="step-2">Next Step</button>
+                        <p class="mb-4 text-gray-300">You'll need to create a Spotify Developer application to use this service:</p>
+                        <div class="instruction-list space-y-3">
+                            <div class="instruction-item">
+                                <div class="instruction-icon">1</div>
+                                <div>Visit <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener noreferrer" class="text-green-500 hover:underline">Spotify Developer Dashboard</a></div>
+                            </div>
+                            <div class="instruction-item">
+                                <div class="instruction-icon">2</div>
+                                <div>Sign in with your Spotify account</div>
+                            </div>
+                            <div class="instruction-item">
+                                <div class="instruction-icon">3</div>
+                                <div>Click "Create app"</div>
+                            </div>
+                            <div class="instruction-item">
+                                <div class="instruction-icon">4</div>
+                                <div>
+                                    <div>Fill in the app details</div>
+                                    <div class="collapsible-toggle" onclick="toggleCollapsible(this)">Show Details ▼</div>
+                                    <div class="collapsible-content">
+                                        <ul class="ml-6 mt-2 text-gray-300">
+                                            <li class="mb-1">App name: "AI Music Recommendations" (or any name you prefer)</li>
+                                            <li class="mb-1">App description: "Personal app for AI music recommendations"</li>
+                                            <li class="mb-1">Redirect URI: <code class="bg-gray-800 p-1 rounded">{{ base_url }}/callback</code></li>
+                                            <li class="mb-1">Website: <code class="bg-gray-800 p-1 rounded">{{ base_url }}</code></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="instruction-item">
+                                <div class="instruction-icon">5</div>
+                                <div>Accept the terms and click "Save"</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-next mt-4 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full" data-next="step-2">Next Step</button>
                     </div>
                 </div>
                 
-                <div class="step hidden" id="step-2">
-                    <div class="step-header">
-                        <div class="step-number">2</div>
-                        <h2>Get Your Spotify Credentials</h2>
+                <div id="step-2" class="step-card hidden">
+                    <div class="step-header flex items-center mb-4">
+                        <div class="step-number bg-green-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold mr-4">2</div>
+                        <h2 class="text-xl font-semibold text-white">Get Your Spotify Credentials</h2>
                     </div>
                     <div class="step-content">
-                        <p>Now you need to get your Spotify Client ID and Client Secret:</p>
-                        <ol>
-                            <li>In your Spotify Developer Dashboard, click on your app</li>
-                            <li>You'll see your Client ID displayed on the page</li>
-                            <li>Click "Show Client Secret" to reveal your Client Secret</li>
-                            <li>Copy both values - you'll need them in the next step</li>
-                        </ol>
-                        <div class="buttons-row">
-                            <button class="btn btn-back" data-prev="step-1">Previous Step</button>
-                            <button class="btn btn-next" data-next="step-3">Next Step</button>
+                        <p class="mb-4 text-gray-300">Now you need to get your Spotify Client ID and Client Secret:</p>
+                        <div class="instruction-list space-y-3">
+                            <div class="instruction-item">
+                                <div class="instruction-icon">1</div>
+                                <div>In your Spotify Developer Dashboard, click on your app</div>
+                            </div>
+                            <div class="instruction-item">
+                                <div class="instruction-icon">2</div>
+                                <div>You'll see your Client ID displayed on the page</div>
+                            </div>
+                            <div class="instruction-item">
+                                <div class="instruction-icon">3</div>
+                                <div>Click "Show Client Secret" to reveal your Client Secret</div>
+                            </div>
+                            <div class="instruction-item">
+                                <div class="instruction-icon">4</div>
+                                <div>Copy both values - you'll need them in the next step</div>
+                            </div>
+                        </div>
+                        <div class="buttons-row flex space-x-4 mt-4">
+                            <button class="btn btn-back bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-full" data-prev="step-1">Previous Step</button>
+                            <button class="btn btn-next bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full" data-next="step-3">Next Step</button>
                         </div>
                     </div>
                 </div>
                 
-                <div class="step hidden" id="step-3">
-                    <div class="step-header">
-                        <div class="step-number">3</div>
-                        <h2>Enter Your Spotify Credentials</h2>
+                <div id="step-3" class="step-card hidden">
+                    <div class="step-header flex items-center mb-4">
+                        <div class="step-number bg-green-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold mr-4">3</div>
+                        <h2 class="text-xl font-semibold text-white">Enter Your Spotify Credentials</h2>
                     </div>
                     <div class="step-content">
-                        <p>Enter your Spotify Client ID and Client Secret below:</p>
-                        <div class="spotify-creds-form">
+                        <p class="mb-4 text-gray-300">Enter your Spotify Client ID and Client Secret below:</p>
+                        <div class="spotify-creds-form space-y-4">
                             <div class="form-group">
-                                <label for="client-id-input">Client ID</label>
-                                <input type="text" id="client-id-input" placeholder="Paste your Client ID here" />
+                                <label for="client-id-input" class="block mb-2 font-medium text-gray-300">Client ID</label>
+                                <div class="input-feedback">
+                                    <input type="text" id="client-id-input" placeholder="Paste your Client ID here" class="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500" />
+                                    <span id="client-id-valid" class="feedback-icon valid">✓</span>
+                                    <span id="client-id-invalid" class="feedback-icon invalid">✗</span>
+                                </div>
                             </div>
                             <div class="form-group">
-                                <label for="client-secret-input">Client Secret</label>
-                                <input type="password" id="client-secret-input" placeholder="Paste your Client Secret here" />
+                                <label for="client-secret-input" class="block mb-2 font-medium text-gray-300">Client Secret</label>
+                                <div class="input-feedback">
+                                    <input type="password" id="client-secret-input" placeholder="Paste your Client Secret here" class="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500" />
+                                    <span id="client-secret-valid" class="feedback-icon valid">✓</span>
+                                    <span id="client-secret-invalid" class="feedback-icon invalid">✗</span>
+                                </div>
                             </div>
-                            <div id="spotify-creds-error" class="error-message hidden"></div>
-                            <div class="buttons-row">
-                                <button class="btn btn-back" data-prev="step-2">Previous Step</button>
-                                <button id="save-spotify-creds-btn" class="btn btn-primary">Save Credentials</button>
+                            <div id="spotify-creds-error" class="error-message hidden text-red-500 mb-2"></div>
+                            <div class="buttons-row flex space-x-4">
+                                <button class="btn btn-back bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-full" data-prev="step-2">Previous Step</button>
+                                <button id="save-spotify-creds-btn" class="btn btn-primary bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full">Save Credentials</button>
                             </div>
                         </div>
-                        <div id="spotify-success-message" class="success-message hidden">
-                            <p>✅ Spotify credentials saved successfully!</p>
-                            <a href="{{ url_for('authorize_spotify') }}" class="btn btn-primary">Connect with Spotify</a>
+                        <div id="spotify-success-message" class="success-message hidden mt-6 text-center">
+                            <p class="text-green-400 text-lg mb-4">✅ Spotify credentials saved successfully!</p>
+                            <a href="{{ url_for('authorize_spotify') }}" class="btn btn-primary bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full">Connect with Spotify</a>
                         </div>
                     </div>
                 </div>
@@ -97,5 +222,48 @@
     </div>
     
     <script src="{{ url_for('static', filename='js/setup_spotify.js') }}"></script>
+    <script>
+        function toggleCollapsible(element) {
+            const content = element.nextElementSibling;
+            content.classList.toggle('expanded');
+            element.textContent = content.classList.contains('expanded') ? 'Hide Details ▲' : 'Show Details ▼';
+        }
+
+        document.querySelectorAll('.btn-next').forEach(button => {
+            button.addEventListener('click', () => {
+                const currentStep = button.closest('.step-card');
+                const nextStepId = button.getAttribute('data-next');
+                const nextStep = document.getElementById(nextStepId);
+                
+                currentStep.classList.remove('active');
+                currentStep.classList.add('hidden');
+                nextStep.classList.remove('hidden');
+                nextStep.classList.add('active');
+                
+                // Update progress bar
+                const stepNumber = parseInt(nextStepId.split('-')[1]);
+                const progressFill = document.getElementById('progress-fill');
+                progressFill.style.width = `${(stepNumber / 3) * 100}%`;
+            });
+        });
+
+        document.querySelectorAll('.btn-back').forEach(button => {
+            button.addEventListener('click', () => {
+                const currentStep = button.closest('.step-card');
+                const prevStepId = button.getAttribute('data-prev');
+                const prevStep = document.getElementById(prevStepId);
+                
+                currentStep.classList.remove('active');
+                currentStep.classList.add('hidden');
+                prevStep.classList.remove('hidden');
+                prevStep.classList.add('active');
+                
+                // Update progress bar
+                const stepNumber = parseInt(prevStepId.split('-')[1]);
+                const progressFill = document.getElementById('progress-fill');
+                progressFill.style.width = `${(stepNumber / 3) * 100}%`;
+            });
+        });
+    </script>
 </body>
 </html>

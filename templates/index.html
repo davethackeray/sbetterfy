@@ -5,63 +5,106 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spotify AI Recommendations</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .hero-gradient {
+            background: linear-gradient(135deg, #121212 0%, #1AA34A 100%);
+        }
+        .feature-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 25px rgba(29, 185, 84, 0.3);
+        }
+        .step-connector {
+            position: absolute;
+            top: 50%;
+            left: 100%;
+            width: calc(100% - 2rem);
+            height: 2px;
+            background-color: #1DB954;
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+        @media (max-width: 768px) {
+            .step-connector {
+                display: none;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <div class="hero">
-            <h1>Discover Your Next Favorite Song</h1>
-            <p class="subtitle">AI-powered music recommendations based on your Spotify likes</p>
-            
-            <div class="features">
-                <div class="feature">
-                    <div class="feature-icon">🎵</div>
-                    <h3>Personalized</h3>
-                    <p>Recommendations tailored to your unique taste</p>
-                </div>
-                <div class="feature">
-                    <div class="feature-icon">🔍</div>
-                    <h3>Discover</h3>
-                    <p>Find hidden gems you might have missed</p>
-                </div>
-                <div class="feature">
-                    <div class="feature-icon">🎧</div>
-                    <h3>Create</h3>
-                    <p>Generate playlists with one click</p>
-                </div>
+    <div class="app-container min-h-screen flex flex-col text-white">
+        <header class="p-4 md:p-6 flex justify-between items-center bg-black bg-opacity-30 backdrop-blur-lg sticky top-0 z-50">
+            <div class="logo text-xl md:text-2xl font-bold text-green-500">Spotify AI Recommendations</div>
+            <div class="user-info">
+                {% if 'user_id' in session %}
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary bg-green-500 hover:bg-green-600 text-white px-3 py-1 md:px-4 md:py-2 rounded-full text-sm md:text-base">Go to Dashboard</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-primary bg-green-500 hover:bg-green-600 text-white px-3 py-1 md:px-4 md:py-2 rounded-full text-sm md:text-base">Get Started</a>
+                {% endif %}
             </div>
-            
-            <a href="{{ url_for('login') }}" class="btn btn-primary">Connect with Spotify</a>
-        </div>
+        </header>
         
-        <div class="how-it-works">
-            <h2>How It Works</h2>
-            <div class="steps">
-                <div class="step">
-                    <div class="step-number">1</div>
-                    <h3>Connect Spotify</h3>
-                    <p>Link your Spotify account to analyze your liked songs</p>
+        <main class="flex-1">
+            <section class="hero hero-gradient py-12 md:py-20 px-4 md:px-6 text-center flex flex-col items-center justify-center">
+                <h1 class="text-3xl md:text-5xl font-extrabold mb-4 max-w-3xl">Discover Music Like Never Before with AI</h1>
+                <p class="subtitle text-lg md:text-xl text-gray-200 max-w-2xl mb-8">Get personalized Spotify recommendations powered by Google Gemini AI, tailored to your unique taste.</p>
+                {% if 'user_id' in session %}
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-full text-lg font-semibold">Go to Dashboard</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-primary bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-full text-lg font-semibold">Get Started Now</a>
+                {% endif %}
+            </section>
+
+            <section class="features py-16 px-4 md:px-6 text-center">
+                <h2 class="text-2xl md:text-3xl font-bold mb-12 text-white">Why Choose Our Platform?</h2>
+                <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl">
+                    <div class="feature-card bg-gray-800 rounded-lg p-6 w-full">
+                        <div class="feature-icon text-5xl mb-4 text-green-500">🤖</div>
+                        <h3 class="text-xl font-semibold mb-2 text-white">AI-Powered Recommendations</h3>
+                        <p class="text-gray-300">Leverage Google Gemini AI to analyze your Spotify library and suggest tracks you'll love.</p>
+                    </div>
+                    <div class="feature-card bg-gray-800 rounded-lg p-6 w-full">
+                        <div class="feature-icon text-5xl mb-4 text-green-500">🎵</div>
+                        <h3 class="text-xl font-semibold mb-2 text-white">Personalized Playlists</h3>
+                        <p class="text-gray-300">Create custom playlists based on mood, genre, discovery level, and more.</p>
+                    </div>
+                    <div class="feature-card bg-gray-800 rounded-lg p-6 w-full">
+                        <div class="feature-icon text-5xl mb-4 text-green-500">🔒</div>
+                        <h3 class="text-xl font-semibold mb-2 text-white">Secure Integration</h3>
+                        <p class="text-gray-300">Your data is protected with secure Spotify API integration and encryption.</p>
+                    </div>
                 </div>
-                <div class="step">
-                    <div class="step-number">2</div>
-                    <h3>Set Preferences</h3>
-                    <p>Choose your discovery level, genres, and more</p>
+            </section>
+
+            <section class="how-it-works py-16 px-4 md:px-6 text-center bg-gray-900">
+                <h2 class="text-2xl md:text-3xl font-bold mb-12 text-white">How It Works</h2>
+                <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl relative">
+                    <div class="step bg-gray-800 rounded-lg p-6 w-full relative">
+                        <div class="step-number bg-green-500 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold mx-auto mb-4 z-10 relative">1</div>
+                        <div class="step-connector hidden md:block"></div>
+                        <h3 class="text-xl font-semibold mb-2 text-white">Connect Spotify</h3>
+                        <p class="text-gray-300">Link your Spotify account and provide developer credentials.</p>
+                    </div>
+                    <div class="step bg-gray-800 rounded-lg p-6 w-full relative">
+                        <div class="step-number bg-green-500 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold mx-auto mb-4 z-10 relative">2</div>
+                        <div class="step-connector hidden md:block"></div>
+                        <h3 class="text-xl font-semibold mb-2 text-white">Set Up AI API</h3>
+                        <p class="text-gray-300">Configure your Google Gemini AI API key for personalized recommendations.</p>
+                    </div>
+                    <div class="step bg-gray-800 rounded-lg p-6 w-full relative">
+                        <div class="step-number bg-green-500 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold mx-auto mb-4 z-10 relative">3</div>
+                        <h3 class="text-xl font-semibold mb-2 text-white">Discover Music</h3>
+                        <p class="text-gray-300">Customize parameters and get AI-generated playlists instantly.</p>
+                    </div>
                 </div>
-                <div class="step">
-                    <div class="step-number">3</div>
-                    <h3>Get Recommendations</h3>
-                    <p>Receive AI-generated song recommendations</p>
-                </div>
-                <div class="step">
-                    <div class="step-number">4</div>
-                    <h3>Create Playlists</h3>
-                    <p>Save your discoveries directly to Spotify</p>
-                </div>
-            </div>
-        </div>
+            </section>
+        </main>
         
-        <footer>
-            <p>Powered by Google AI and Spotify API</p>
-            <p>© 2025 Spotify AI Recommendations</p>
+        <footer class="py-6 text-center text-gray-400 text-sm bg-black bg-opacity-50">
+            <p>© 2025 Spotify AI Recommendations. All rights reserved.</p>
         </footer>
     </div>
     
