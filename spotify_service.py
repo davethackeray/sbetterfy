@@ -2,6 +2,9 @@ import os
 import requests
 import base64
 import urllib.parse
+import hashlib
+import secrets
+import string
 from urllib.parse import urlencode
 
 class SpotifyService:
@@ -13,23 +16,40 @@ class SpotifyService:
         self.base_url = 'https://api.spotify.com/v1'
         # In-memory cache for API responses
         self._cache = {}
-        # Cache expiration time in seconds (e.g., 5 minutes)
-        self._cache_expiry = 300
+        # Default cache expiration time in seconds (5 minutes)
+        self._default_cache_expiry = 300
+        # Extended cache expiration for less frequently changing data (1 hour)
+        self._extended_cache_expiry = 3600
         # Track cache timestamps
         self._cache_timestamps = {}
+        # Maximum cache size to prevent memory issues
+        self._max_cache_size = 1000
+        # Store code verifier for PKCE
+        self._code_verifier = None
     
     def get_auth_url(self, state=None):
-        """Generate the Spotify authorization URL"""
+        """Generate the Spotify authorization URL with PKCE"""
         if not self.client_id:
             raise ValueError("Spotify client ID not configured")
             
+        # Generate a code verifier (random string)
+        alphabet = string.ascii_letters + string.digits
+        self._code_verifier = ''.join(secrets.choice(alphabet) for _ in range(128))
+        
+        # Generate code challenge (base64 URL encoded SHA256 hash of verifier)
+        code_challenge = base64.urlsafe_b64encode(
+            hashlib.sha256(self._code_verifier.encode('ascii')).digest()
+        ).decode('ascii').rstrip('=')
+        
         scope = 'user-library-read playlist-modify-public user-top-read'
         params = {
             'client_id': self.client_id,
             'response_type': 'code',
             'redirect_uri': self.redirect_uri,
             'scope': scope,
-            'show_dialog': 'true'
+            'show_dialog': 'true',
+            'code_challenge_method': 'S256',
+            'code_challenge': code_challenge
         }
         
         if state:
@@ -38,9 +58,12 @@ class SpotifyService:
         return f"https://accounts.spotify.com/authorize?{urlencode(params)}"
     
     def get_tokens(self, code):
-        """Exchange authorization code for access and refresh tokens"""
+        """Exchange authorization code for access and refresh tokens with PKCE"""
         if not self.client_id or not self.client_secret:
             raise ValueError("Spotify credentials not configured")
+            
+        if not self._code_verifier:
+            raise ValueError("Code verifier not set for PKCE flow")
             
         auth_header = base64.b64encode(f"{self.client_id}:{self.client_secret}".encode()).decode()
         headers = {
@@ -50,7 +73,8 @@ class SpotifyService:
         data = {
             'grant_type': 'authorization_code',
             'code': code,
-            'redirect_uri': self.redirect_uri
+            'redirect_uri': self.redirect_uri,
+            'code_verifier': self._code_verifier
         }
         
         response = requests.post('https://accounts.spotify.com/api/token', headers=headers, data=data)
@@ -58,6 +82,8 @@ class SpotifyService:
         if response.status_code != 200:
             return None
         
+        # Clear the code verifier after use
+        self._code_verifier = None
         return response.json()
     
     def refresh_token(self):
@@ -99,12 +125,13 @@ class SpotifyService:
             key += ":" + urllib.parse.urlencode(sorted_params)
         return key
 
-    def _get_from_cache(self, key):
+    def _get_from_cache(self, key, expiry=None):
         """Retrieve data from cache if it exists and is not expired"""
         import time
         if key in self._cache:
             timestamp = self._cache_timestamps.get(key, 0)
-            if time.time() - timestamp < self._cache_expiry:
+            expiry_time = expiry if expiry is not None else self._default_cache_expiry
+            if time.time() - timestamp < expiry_time:
                 return self._cache[key]
             else:
                 # Remove expired cache entry
@@ -112,13 +139,18 @@ class SpotifyService:
                 del self._cache_timestamps[key]
         return None
 
-    def _set_to_cache(self, key, data):
-        """Store data in cache with a timestamp"""
+    def _set_to_cache(self, key, data, expiry=None):
+        """Store data in cache with a timestamp, limit cache size"""
         import time
+        # Limit cache size by removing oldest entries if necessary
+        if len(self._cache) >= self._max_cache_size:
+            oldest_key = min(self._cache_timestamps, key=lambda k: self._cache_timestamps[k])
+            del self._cache[oldest_key]
+            del self._cache_timestamps[oldest_key]
         self._cache[key] = data
         self._cache_timestamps[key] = time.time()
 
-    def make_api_request(self, endpoint, method='GET', data=None, params=None):
+    def make_api_request(self, endpoint, method='GET', data=None, params=None, cache_expiry=None):
         """Make a request to the Spotify API with automatic token refresh and caching for GET requests"""
         if not self.tokens:
             return None
@@ -126,7 +158,9 @@ class SpotifyService:
         # For GET requests, check cache first
         if method == 'GET':
             cache_key = self._get_cache_key(endpoint, params)
-            cached_response = self._get_from_cache(cache_key)
+            # Use provided cache expiry or default to standard expiry
+            expiry = cache_expiry if cache_expiry is not None else self._default_cache_expiry
+            cached_response = self._get_from_cache(cache_key, expiry)
             if cached_response is not None:
                 return cached_response
         
@@ -147,7 +181,7 @@ class SpotifyService:
             
             # If token expired, refresh and retry
             if response.status_code == 401 and self.refresh_token():
-                return self.make_api_request(endpoint, method, data, params)
+                return self.make_api_request(endpoint, method, data, params, cache_expiry)
             
             if response.status_code not in (200, 201):
                 return None
@@ -155,14 +189,15 @@ class SpotifyService:
             response_data = response.json()
             # Cache successful GET responses
             if method == 'GET':
-                self._set_to_cache(cache_key, response_data)
+                expiry = cache_expiry if cache_expiry is not None else self._default_cache_expiry
+                self._set_to_cache(cache_key, response_data, expiry)
             
             return response_data
         except Exception:
             return None
     
     def get_user_profile(self, access_token=None):
-        """Get the current user's profile"""
+        """Get the current user's profile, use extended cache as profile data changes infrequently"""
         if access_token:
             headers = {'Authorization': f"Bearer {access_token}"}
             response = requests.get(f"{self.base_url}/me", headers=headers)
@@ -170,7 +205,7 @@ class SpotifyService:
                 return None
             return response.json()
         
-        return self.make_api_request('me')
+        return self.make_api_request('me', cache_expiry=self._extended_cache_expiry)
     
     def get_liked_songs(self, limit=50):
         """Get the user's liked songs"""
@@ -207,7 +242,7 @@ class SpotifyService:
         return songs
     
     def create_playlist(self, name, track_uris):
-        """Create a playlist with the given tracks"""
+        """Create a playlist with the given tracks, invalidate user playlists cache after creation"""
         # Get user ID
         user_profile = self.get_user_profile()
         if not user_profile:
@@ -233,6 +268,12 @@ class SpotifyService:
             batch = track_uris[i:i+100]
             data = {'uris': batch}
             self.make_api_request(f'playlists/{playlist_id}/tracks', method='POST', data=data)
+        
+        # Invalidate cache for user playlists to ensure updated list is fetched next time
+        cache_key = self._get_cache_key(f'users/{user_id}/playlists')
+        if cache_key in self._cache:
+            del self._cache[cache_key]
+            del self._cache_timestamps[cache_key]
         
         return {
             'id': playlist['id'],

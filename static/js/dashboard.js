@@ -209,10 +209,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showError(message) {
-        errorMessage.textContent = message;
-        errorMessage.classList.remove('hidden');
+        // Create a flash message element similar to Flask flash messages
+        const flashContainer = document.createElement('div');
+        flashContainer.className = 'flash-message bg-red-500 text-white p-4 rounded-lg shadow-lg mb-2';
+        flashContainer.textContent = message;
+        
+        // Add to the flash messages container or create one if it doesn't exist
+        let flashMessages = document.getElementById('flash-messages');
+        if (!flashMessages) {
+            flashMessages = document.createElement('div');
+            flashMessages.id = 'flash-messages';
+            flashMessages.className = 'fixed top-4 right-4 z-50';
+            document.body.appendChild(flashMessages);
+        }
+        
+        flashMessages.appendChild(flashContainer);
         setTimeout(() => {
-            errorMessage.classList.add('hidden');
+            flashContainer.remove();
         }, 5000);
     }
 
@@ -251,10 +264,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showFeedbackError(message) {
-        feedbackError.textContent = message;
-        feedbackError.classList.remove('hidden');
-        setTimeout(() => {
-            feedbackError.classList.add('hidden');
-        }, 5000);
+        showError(message);
     }
 });

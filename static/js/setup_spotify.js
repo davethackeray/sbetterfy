@@ -85,14 +85,37 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    function showError(message) {
-        credsError.textContent = message;
-        credsError.classList.remove('hidden');
-    }
+function showFlashMessage(message, type = 'error') {
+    const container = document.getElementById('flash-messages') || createFlashContainer();
+    const messageElement = document.createElement('div');
+    messageElement.className = `flash-message ${type}`;
+    messageElement.textContent = message;
+    container.appendChild(messageElement);
     
-    function hideError() {
-        credsError.classList.add('hidden');
-    }
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        messageElement.remove();
+    }, 5000);
+}
+
+function createFlashContainer() {
+    const container = document.createElement('div');
+    container.id = 'flash-messages';
+    container.style.position = 'fixed';
+    container.style.top = '20px';
+    container.style.right = '20px';
+    container.style.zIndex = '1000';
+    document.body.appendChild(container);
+    return container;
+}
+
+function showError(message) {
+    showFlashMessage(message, 'error');
+}
+
+function hideError() {
+    // No action needed as flash messages auto-dismiss
+}
     
     // Check if credentials are already set
     fetch('/api/validate-spotify-creds')

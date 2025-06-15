@@ -52,4 +52,82 @@ def test_get_recommendations_basic(recommendation_service):
             assert recommendations["tracks"][0]["name"] == "Recommended Song"
             assert recommendations["tracks"][0]["reason"] == "Good match"
 
-# Additional tests can be added for edge cases, different parameters, and error handling.
+def test_get_recommendations_empty_liked_songs(recommendation_service):
+    """Test get_recommendations when user has no liked songs."""
+    mock_spotify = MagicMock()
+    mock_spotify.get_liked_songs.return_value = []
+    
+    with patch.object(recommendation_service, '_generate_recommendation_prompt') as mock_prompt:
+        with patch.object(recommendation_service, '_parse_recommendations') as mock_parse:
+            mock_prompt.return_value = "mock prompt for no liked songs"
+            mock_parse.return_value = [
+                {"title": "Generic Song", "artist": "Generic Artist", "reason": "Based on general trends"}
+            ]
+            mock_spotify.search_track.return_value = {"uri": "spotify:track:456", "name": "Generic Song", "artists": [{"name": "Generic Artist"}], "album": {"images": [{"url": "image_url"}]}}
+            
+            recommendations = recommendation_service.get_recommendations(
+                spotify=mock_spotify,
+                count=1,
+                discovery_level=50,
+                min_year=1900,
+                max_popularity=100,
+                genres=[],
+                moods=[]
+            )
+            assert len(recommendations["tracks"]) == 1
+            assert recommendations["tracks"][0]["name"] == "Generic Song"
+            assert recommendations["tracks"][0]["reason"] == "Based on general trends"
+
+def test_get_recommendations_with_genres_and_moods(recommendation_service):
+    """Test get_recommendations with specific genres and moods."""
+    mock_spotify = MagicMock()
+    mock_spotify.get_liked_songs.return_value = [
+        {"name": "Song 1", "artists": [{"name": "Artist 1"}], "album": {"release_date": "2020-01-01"}}
+    ]
+    
+    with patch.object(recommendation_service, '_generate_recommendation_prompt') as mock_prompt:
+        with patch.object(recommendation_service, '_parse_recommendations') as mock_parse:
+            mock_prompt.return_value = "mock prompt with genres and moods"
+            mock_parse.return_value = [
+                {"title": "Mood Song", "artist": "Mood Artist", "reason": "Matches mood and genre"}
+            ]
+            mock_spotify.search_track.return_value = {"uri": "spotify:track:789", "name": "Mood Song", "artists": [{"name": "Mood Artist"}], "album": {"images": [{"url": "image_url"}]}}
+            
+            recommendations = recommendation_service.get_recommendations(
+                spotify=mock_spotify,
+                count=1,
+                discovery_level=75,
+                min_year=2000,
+                max_popularity=80,
+                genres=["rock", "indie"],
+                moods=["energetic", "happy"]
+            )
+            assert len(recommendations["tracks"]) == 1
+            assert recommendations["tracks"][0]["name"] == "Mood Song"
+            assert mock_prompt.call_args[0][2] == ["rock", "indie"]  # Check genres passed to prompt
+            assert mock_prompt.call_args[0][3] == ["energetic", "happy"]  # Check moods passed to prompt
+
+def test_get_recommendations_parsing_failure(recommendation_service):
+    """Test get_recommendations when AI response parsing fails."""
+    mock_spotify = MagicMock()
+    mock_spotify.get_liked_songs.return_value = [
+        {"name": "Song 1", "artists": [{"name": "Artist 1"}], "album": {"release_date": "2020-01-01"}}
+    ]
+    
+    with patch.object(recommendation_service, '_generate_recommendation_prompt') as mock_prompt:
+        with patch.object(recommendation_service, '_parse_recommendations') as mock_parse:
+            mock_prompt.return_value = "mock prompt"
+            mock_parse.side_effect = ValueError("Failed to parse AI response")
+            
+            recommendations = recommendation_service.get_recommendations(
+                spotify=mock_spotify,
+                count=5,
+                discovery_level=50,
+                min_year=1900,
+                max_popularity=100,
+                genres=[],
+                moods=[]
+            )
+            assert len(recommendations["tracks"]) == 0  # Should return empty list on parsing failure
+
+# Additional tests can be added for other edge cases like API failures, invalid parameters, etc.

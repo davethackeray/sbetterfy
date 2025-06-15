@@ -96,6 +96,20 @@
                 <a href="{{ url_for('index') }}" class="btn btn-small">Back to Home</a>
             </div>
         </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="notification bg-{{ 'green-600' if category == 'success' else 'red-600' }} text-white p-4 text-center font-medium shadow-md z-50 relative">
+                        <div class="flex items-center justify-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' if category == 'success' else 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' }}"></path>
+                            </svg>
+                            {{ message }}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
         
         <main class="setup-container mx-auto max-w-3xl p-6">
             <h1 class="text-center text-2xl md:text-3xl font-bold mb-6 text-white">Set Up Your Spotify Developer Account</h1>

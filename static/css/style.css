@@ -205,6 +205,39 @@ a:focus, button:focus, input:focus, select:focus, textarea:focus {
     border: 0;
 }
 
+/* Flash Messages for User Feedback */
+.flash-message {
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 0.5rem;
+    max-width: 300px;
+    box-shadow: var(--box-shadow);
+    animation: slideIn 0.3s ease;
+}
+
+.flash-message.error {
+    background-color: rgba(255, 76, 76, 0.2);
+    border-left: 4px solid var(--error-color);
+    color: var(--text-base);
+}
+
+.flash-message.success {
+    background-color: rgba(29, 185, 84, 0.2);
+    border-left: 4px solid var(--success-color);
+    color: var(--text-base);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
 /* Keyboard navigation enhancements */
 .keyboard-focus:focus {
     outline: 2px solid var(--primary-color);

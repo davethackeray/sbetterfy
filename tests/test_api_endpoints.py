@@ -74,4 +74,76 @@ def test_save_spotify_creds_unauthenticated(client):
     assert response.status_code == 401
     assert "error" in response.json
 
-# Additional integration tests can be added for other endpoints like /authorize-spotify, /callback, /api/recommendations, etc.
+def test_authorize_spotify_success(client, mock_user_service):
+    """Test /authorize-spotify route with valid user ID and credentials."""
+    with client.session_transaction() as sess:
+        sess['temp_user_id'] = 'test_user'
+    mock_user_service.get_spotify_credentials.return_value = {
+        'client_id': 'mock_client_id',
+        'client_secret': 'mock_client_secret'
+    }
+    with patch('main.SpotifyService.get_auth_url') as mock_get_auth_url:
+        mock_get_auth_url.return_value = "https://accounts.spotify.com/authorize?client_id=mock_client_id&..."
+        response = client.get('/authorize-spotify')
+        assert response.status_code == 302
+        assert response.location.startswith("https://accounts.spotify.com/authorize")
+
+def test_authorize_spotify_no_user_id(client):
+    """Test /authorize-spotify route without a user ID in session."""
+    response = client.get('/authorize-spotify')
+    assert response.status_code == 302
+    assert response.location.endswith('/login')
+
+def test_authorize_spotify_no_credentials(client, mock_user_service):
+    """Test /authorize-spotify route when no Spotify credentials are found."""
+    with client.session_transaction() as sess:
+        sess['temp_user_id'] = 'test_user'
+    mock_user_service.get_spotify_credentials.return_value = None
+    response = client.get('/authorize-spotify')
+    assert response.status_code == 302
+    assert response.location.endswith('/login')
+
+def test_dashboard_authenticated(client):
+    """Test /dashboard route when user is authenticated."""
+    with client.session_transaction() as sess:
+        sess['user_id'] = 'test_user'
+        sess['display_name'] = 'Test User'
+    with patch('main.user_service.has_gemini_api_key', return_value=True):
+        response = client.get('/dashboard')
+        assert response.status_code == 200
+        assert b'dashboard.html' in response.data  # Assuming template rendering check
+
+def test_dashboard_not_authenticated(client):
+    """Test /dashboard route when user is not authenticated."""
+    response = client.get('/dashboard')
+    assert response.status_code == 302
+    assert response.location.endswith('/')
+
+def test_save_api_key_success(client, mock_user_service):
+    """Test /api/save-api-key route with valid API key."""
+    with client.session_transaction() as sess:
+        sess['user_id'] = 'test_user'
+    with patch('main.RecommendationService.validate_api_key', return_value=True):
+        with patch('main.user_service.save_gemini_api_key') as mock_save:
+            response = client.post('/api/save-api-key', json={'api_key': 'mock_api_key'})
+            assert response.status_code == 200
+            assert response.json == {"status": "success"}
+            mock_save.assert_called_once_with('test_user', 'mock_api_key')
+
+def test_save_api_key_invalid(client, mock_user_service):
+    """Test /api/save-api-key route with invalid API key."""
+    with client.session_transaction() as sess:
+        sess['user_id'] = 'test_user'
+    with patch('main.RecommendationService.validate_api_key', return_value=False):
+        response = client.post('/api/save-api-key', json={'api_key': 'invalid_key'})
+        assert response.status_code == 400
+        assert "error" in response.json
+        assert response.json["error"] == "Invalid Google AI API key"
+
+def test_save_api_key_unauthenticated(client):
+    """Test /api/save-api-key route without authentication."""
+    response = client.post('/api/save-api-key', json={'api_key': 'mock_api_key'})
+    assert response.status_code == 401
+    assert "error" in response.json
+
+# Additional integration tests can be added for other endpoints like /callback, /api/recommendations, /api/create-playlist, etc.

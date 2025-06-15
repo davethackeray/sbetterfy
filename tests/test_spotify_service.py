@@ -38,4 +38,55 @@ def test_get_auth_url(spotify_service):
     assert f"state={user_id}" in auth_url
     assert "scope=user-read-private+user-read-email+user-library-read+playlist-modify-public+playlist-modify-private" in auth_url
 
-# Additional tests can be added for other methods like get_tokens, get_user_profile, etc.
+def test_get_tokens_success(spotify_service):
+    """Test that get_tokens returns tokens with a valid authorization code."""
+    with patch('requests.post') as mock_post:
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "access_token": "mock_access_token",
+            "refresh_token": "mock_refresh_token",
+            "expires_in": 3600
+        }
+        mock_post.return_value = mock_response
+        
+        tokens = spotify_service.get_tokens("mock_code")
+        assert tokens["access_token"] == "mock_access_token"
+        assert tokens["refresh_token"] == "mock_refresh_token"
+        assert tokens["expires_in"] == 3600
+
+def test_get_tokens_failure(spotify_service):
+    """Test that get_tokens returns None when token request fails."""
+    with patch('requests.post') as mock_post:
+        mock_response = MagicMock()
+        mock_response.status_code = 400
+        mock_post.return_value = mock_response
+        
+        tokens = spotify_service.get_tokens("invalid_code")
+        assert tokens is None
+
+def test_get_user_profile_success(spotify_service):
+    """Test that get_user_profile returns user data with a valid access token."""
+    with patch('requests.get') as mock_get:
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "id": "mock_user_id",
+            "display_name": "Mock User"
+        }
+        mock_get.return_value = mock_response
+        
+        profile = spotify_service.get_user_profile("mock_access_token")
+        assert profile["id"] == "mock_user_id"
+        assert profile["display_name"] == "Mock User"
+
+def test_get_user_profile_failure(spotify_service):
+    """Test that get_user_profile returns None when request fails."""
+    with patch('requests.get') as mock_get:
+        mock_response = MagicMock()
+        mock_response.status_code = 401
+        mock_get.return_value = mock_response
+        
+        profile = spotify_service.get_user_profile("invalid_token")
+        assert profile is None
+# Additional tests can be added for other methods like get_liked_songs, search_track, create_playlist, etc.

@@ -60,9 +60,6 @@ document.addEventListener('DOMContentLoaded', function() {
     .then(response => {
       if (!response.ok) {
         return response.json().then(data => {
-    .then(response => {
-      if (!response.ok) {
-        return response.json().then(data => {
           throw new Error(data.error || 'Failed to save API key');
         });
       }
@@ -84,12 +81,35 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
   
-  function showError(message) {
-    apiKeyError.textContent = message;
-    apiKeyError.classList.remove('hidden');
-  }
+function showFlashMessage(message, type = 'error') {
+  const container = document.getElementById('flash-messages') || createFlashContainer();
+  const messageElement = document.createElement('div');
+  messageElement.className = `flash-message ${type}`;
+  messageElement.textContent = message;
+  container.appendChild(messageElement);
   
-  function hideError() {
-    apiKeyError.classList.add('hidden');
-  }
+  // Auto-dismiss after 5 seconds
+  setTimeout(() => {
+    messageElement.remove();
+  }, 5000);
+}
+
+function createFlashContainer() {
+  const container = document.createElement('div');
+  container.id = 'flash-messages';
+  container.style.position = 'fixed';
+  container.style.top = '20px';
+  container.style.right = '20px';
+  container.style.zIndex = '1000';
+  document.body.appendChild(container);
+  return container;
+}
+
+function showError(message) {
+  showFlashMessage(message, 'error');
+}
+
+function hideError() {
+  // No action needed as flash messages auto-dismiss
+}
 });

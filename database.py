@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, String, Text
+from sqlalchemy import create_engine, Column, String, Text, Index
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
@@ -16,13 +16,17 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = 'users'
     
-    id = Column(String, primary_key=True)
+    id = Column(String, primary_key=True, index=True)
     spotify_client_id = Column(Text)
     spotify_client_secret = Column(Text)
     spotify_access_token = Column(Text)
     spotify_refresh_token = Column(Text)
     gemini_api_key = Column(Text)
     encryption_key = Column(Text)
+    
+    __table_args__ = (
+        Index('idx_user_id', 'id'),
+    )
 
 def get_engine():
     """Return the SQLAlchemy engine"""
@@ -34,10 +38,13 @@ def get_session():
     return Session()
 
 def init_db():
-    """Initialize the database and create tables if they don't exist"""
+    """Initialize the database and create tables and indexes if they don't exist"""
     Base.metadata.create_all(engine)
-    # Create index on id for faster lookups (SQLAlchemy automatically handles indexes if defined in model)
-    # For now, we rely on SQLAlchemy's handling; manual index creation can be added if needed
+    # Indexes are defined in the model and created automatically by SQLAlchemy
+    # Additional performance optimizations can be added here if needed for future schema changes
+    # Future considerations: Add compound indexes for frequently queried fields,
+    # implement query caching for read-heavy operations, or consider database migration
+    # to a more scalable solution like PostgreSQL if user base grows significantly.
 
 if __name__ == "__main__":
     init_db()
