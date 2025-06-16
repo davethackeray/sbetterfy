@@ -318,15 +318,78 @@ class SpotifyService:
             "track_count": added_tracks
         }
     
+    def get_user_playlists(self, limit=50):
+        """Get a list of the user's playlists"""
+        # Get user ID
+        user_profile = self.get_user_profile()
+        if not user_profile:
+            return {"success": False, "message": "Failed to retrieve user profile. Please authenticate again."}
+        
+        user_id = user_profile['id']
+        playlists = []
+        offset = 0
+        
+        while True:
+            params = {'limit': 50, 'offset': offset}
+            response = self.make_api_request(f'users/{user_id}/playlists', params=params, cache_expiry=self._default_cache_expiry)
+            
+            if not response or 'items' not in response:
+                break
+            
+            items = response['items']
+            if not items:
+                break
+            
+            for item in items:
+                playlists.append({
+                    'id': item['id'],
+                    'name': item['name'],
+                    'description': item.get('description', ''),
+                    'track_count': item['tracks']['total'],
+                    'owner': item['owner']['display_name'],
+                    'external_url': item['external_urls']['spotify']
+                })
+            
+            offset += len(items)
+            if len(items) < 50 or offset >= limit:
+                break
+        
+        return {"success": True, "playlists": playlists}
+    
+    def add_tracks_to_playlist(self, playlist_id, track_uris):
+        """Add tracks to an existing playlist, invalidate playlist cache after update"""
+        added_tracks = 0
+        
+        for i in range(0, len(track_uris), 100):
+            batch = track_uris[i:i+100]
+            data = {'uris': batch}
+            result = self.make_api_request(f'playlists/{playlist_id}/tracks', method='POST', data=data)
+            if result:
+                added_tracks += len(batch)
+            else:
+                return {"success": False, "message": f"Failed to add tracks to playlist. Only {added_tracks} tracks were added."}
+        
+        # Invalidate cache for this playlist to ensure updated track list is fetched next time
+        cache_key = self._get_cache_key(f'playlists/{playlist_id}/tracks')
+        if cache_key in self._cache:
+            del self._cache[cache_key]
+            del self._cache_timestamps[cache_key]
+        
+        return {
+            "success": True,
+            "message": f"Successfully added {added_tracks} tracks to the playlist.",
+            "track_count": added_tracks
+        }
+    
     def search_tracks(self, query, limit=10):
-        """Search for tracks on Spotify"""
+        """Search for tracks on Spotify with extended cache expiry"""
         params = {
             'q': query,
             'type': 'track',
             'limit': limit
         }
         
-        response = self.make_api_request('search', params=params)
+        response = self.make_api_request('search', params=params, cache_expiry=self._extended_cache_expiry)
         
         if not response or 'tracks' not in response:
             return []

@@ -86,7 +86,12 @@ class UserService:
             return {"success": False, "message": "Failed to initialize encryption for credentials. Please try again."}
         except Exception as e:
             logger.error(f"Error saving Spotify credentials for user {user_id}: {e}")
-            return {"success": False, "message": "An unexpected error occurred while saving Spotify credentials. Please try again later."}
+            if "database" in str(e).lower():
+                return {"success": False, "message": "Database error occurred while saving Spotify credentials. Please try again later."}
+            elif "encryption" in str(e).lower():
+                return {"success": False, "message": "Encryption error occurred while saving Spotify credentials. Please contact support."}
+            else:
+                return {"success": False, "message": "An unexpected error occurred while saving Spotify credentials. Please try again later."}
 
     def get_spotify_credentials(self, user_id):
         try:
@@ -206,7 +211,12 @@ class UserService:
             return {"success": False, "message": "Failed to initialize encryption for API key. Please try again."}
         except Exception as e:
             logger.error(f"Error saving Gemini API key for user {user_id}: {e}")
-            return {"success": False, "message": "An unexpected error occurred while saving the API key. Please try again later."}
+            if "database" in str(e).lower():
+                return {"success": False, "message": "Database error occurred while saving the API key. Please try again later."}
+            elif "encryption" in str(e).lower():
+                return {"success": False, "message": "Encryption error occurred while saving the API key. Please contact support."}
+            else:
+                return {"success": False, "message": "An unexpected error occurred while saving the API key. Please try again later."}
     
     def get_gemini_api_key(self, user_id):
         """Get Google AI API key for a user"""

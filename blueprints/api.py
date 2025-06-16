@@ -207,8 +207,8 @@ def create_playlist():
     )
     playlist = spotify.create_playlist(playlist_name, track_uris)
     
-    if not playlist:
-        return jsonify({"error": "Failed to create playlist"}), 500
+    if not playlist or not playlist.get('success'):
+        return jsonify({"error": playlist.get('message', "Failed to create playlist")}), 500
     
     return jsonify(playlist)
 
@@ -238,6 +238,129 @@ def get_genres():
     # Fetch available genres
     genres = spotify.get_available_genres()
     if not genres:
-        return jsonify({"error": "Failed to fetch genres from Spotify"}), 500
+        return jsonify({"error": "Failed to fetch genres from Spotify. Please ensure your Spotify account is authenticated and try again."}), 500
     
     return jsonify({"genres": genres})
+
+@api_bp.route('/api/user-playlists', methods=['GET'])
+def get_user_playlists():
+    if 'user_id' not in session:
+        return jsonify({"error": "Not authenticated"}), 401
+    
+    user_id = session['user_id']
+    
+    # Get Spotify credentials and tokens
+    spotify_creds = user_service.get_spotify_credentials(user_id)
+    if not spotify_creds:
+        return jsonify({"error": "Spotify credentials not set"}), 400
+        
+    spotify_tokens = user_service.get_spotify_tokens(user_id)
+    if not spotify_tokens:
+        return jsonify({"error": "Spotify authentication failed"}), 400
+    
+    # Initialize Spotify service
+    spotify = SpotifyService(
+        spotify_creds['client_id'], 
+        spotify_creds['client_secret'], 
+        spotify_tokens
+    )
+    
+    # Fetch user's playlists
+    result = spotify.get_user_playlists()
+    if not result or not result.get('success'):
+        return jsonify({"error": result.get('message', "Failed to fetch user playlists")}), 500
+    
+    return jsonify(result)
+
+@api_bp.route('/api/add-to-playlist', methods=['POST'])
+def add_to_playlist():
+    if 'user_id' not in session:
+        return jsonify({"error": "Not authenticated"}), 401
+    
+    user_id = session['user_id']
+    
+    # Get Spotify credentials and tokens
+    spotify_creds = user_service.get_spotify_credentials(user_id)
+    if not spotify_creds:
+        return jsonify({"error": "Spotify credentials not set"}), 400
+        
+    spotify_tokens = user_service.get_spotify_tokens(user_id)
+    if not spotify_tokens:
+        return jsonify({"error": "Spotify authentication failed"}), 400
+    
+    # Get request data with input validation
+    data = request.json
+    if not isinstance(data, dict):
+        return jsonify({"error": "Invalid request format"}), 400
+        
+    playlist_id = data.get('playlist_id')
+    if not isinstance(playlist_id, str):
+        return jsonify({"error": "Playlist ID must be a string"}), 400
+        
+    track_uris = data.get('track_uris', [])
+    if not isinstance(track_uris, list):
+        return jsonify({"error": "Track URIs must be a list"}), 400
+        
+    if not track_uris:
+        return jsonify({"error": "No tracks provided"}), 400
+        
+    if len(track_uris) > 100:
+        return jsonify({"error": "Too many tracks, maximum allowed is 100"}), 400
+        
+    for uri in track_uris:
+        if not isinstance(uri, str) or not uri.startswith('spotify:track:'):
+            return jsonify({"error": "Invalid track URI format"}), 400
+    
+    # Add tracks to playlist
+    spotify = SpotifyService(
+        spotify_creds['client_id'], 
+        spotify_creds['client_secret'], 
+        spotify_tokens
+    )
+    result = spotify.add_tracks_to_playlist(playlist_id, track_uris)
+    
+    if not result or not result.get('success'):
+        return jsonify({"error": result.get('message', "Failed to add tracks to playlist")}), 500
+    
+    return jsonify(result)
+
+@api_bp.route('/api/filter-extreme-suggestions', methods=['GET'])
+def get_filter_extreme_suggestions():
+    if 'user_id' not in session:
+        return jsonify({"error": "Not authenticated"}), 401
+    
+    user_id = session['user_id']
+    
+    # Get API key
+    gemini_api_key = user_service.get_gemini_api_key(user_id)
+    if not gemini_api_key:
+        return jsonify({"error": "Google AI API key not set"}), 400
+    
+    # Get Spotify credentials and tokens
+    spotify_creds = user_service.get_spotify_credentials(user_id)
+    if not spotify_creds:
+        return jsonify({"error": "Spotify credentials not set"}), 400
+        
+    spotify_tokens = user_service.get_spotify_tokens(user_id)
+    if not spotify_tokens:
+        return jsonify({"error": "Spotify authentication failed"}), 400
+    
+    # Initialize services
+    spotify = SpotifyService(
+        spotify_creds['client_id'], 
+        spotify_creds['client_secret'], 
+        spotify_tokens
+    )
+    recommendation_service = RecommendationService(gemini_api_key)
+    
+    # Get user's Liked Songs
+    liked_songs = spotify.get_liked_songs(limit=50)
+    if not liked_songs or not liked_songs.get('success'):
+        return jsonify({"error": liked_songs.get('message', "Failed to fetch Liked Songs")}), 500
+    
+    # Use Gemini AI to suggest songs for extreme ends of filters
+    try:
+        suggestions = recommendation_service.get_filter_extreme_suggestions(spotify, liked_songs['tracks'])
+        return jsonify(suggestions)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
