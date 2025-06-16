@@ -203,8 +203,11 @@ class SpotifyService:
                         response = requests.post(url, headers=headers, json=data, timeout=10)
                     elif method == 'PUT':
                         response = requests.put(url, headers=headers, json=data, timeout=10)
+                    if response.status_code not in (200, 201):
+                        print(f"Error: Retried API request after token refresh failed with status {response.status_code}. Response: {response.text}")
+                        return None
                 else:
-                    print("Error: Token refresh failed, cannot retry API request.")
+                    print("Error: Token refresh failed, cannot retry API request. Check refresh token or client credentials.")
                     return None
             
             if response.status_code not in (200, 201):

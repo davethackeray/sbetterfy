@@ -324,8 +324,8 @@ def add_to_playlist():
     
     return jsonify(result)
 
-@api_bp.route('/api/filter-extreme-suggestions', methods=['GET'])
-def get_filter_extreme_suggestions():
+@api_bp.route('/api/filter-suggestions', methods=['GET'])
+def get_filter_suggestions():
     if 'user_id' not in session:
         return jsonify({"error": "Not authenticated"}), 401
     
