@@ -628,9 +628,12 @@ document.addEventListener('DOMContentLoaded', function() {
             categoryCard.className = 'category-card mb-4';
             categoryCard.innerHTML = `
                 <h3 class="text-lg font-medium text-white mb-2">${category.filter} - ${category.extreme}</h3>
+                <button class="apply-filter-btn bg-green-500 text-white px-3 py-1 rounded-full text-sm mb-2 hover:bg-green-600" data-filter="${category.filter}" data-extreme="${category.extreme}">Apply this Filter</button>
                 <div class="tracks-grid grid grid-cols-1 gap-2"></div>
             `;
             const tracksGrid = categoryCard.querySelector('.tracks-grid');
+            const applyButton = categoryCard.querySelector('.apply-filter-btn');
+            applyButton.addEventListener('click', () => applyFilter(category.filter, category.extreme));
             
             if (category.tracks && category.tracks.length > 0) {
                 category.tracks.slice(0, 1).forEach(track => {
@@ -655,5 +658,26 @@ document.addEventListener('DOMContentLoaded', function() {
             
             suggestionsContainer.appendChild(categoryCard);
         });
+    }
+
+    function applyFilter(filter, extreme) {
+        // Logic to apply the filter based on type and extreme value
+        if (filter === 'Tempo') {
+            const tempoSelect = document.getElementById('tempo');
+            if (tempoSelect) {
+                tempoSelect.value = extreme.toLowerCase();
+            }
+        } else if (filter === 'Energy') {
+            const energySelect = document.getElementById('energy');
+            if (energySelect) {
+                energySelect.value = extreme.toLowerCase();
+            }
+        } else if (filter === 'Mood') {
+            const moodsInput = document.getElementById('moods');
+            if (moodsInput) {
+                moodsInput.value = extreme;
+            }
+        }
+        showError(`Applied ${filter} filter with ${extreme} setting.`);
     }
 });
