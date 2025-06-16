@@ -128,25 +128,47 @@
                                 <h2 class="text-xl font-semibold mb-6 text-white">Generate Recommendations</h2>
                                 <div class="recommendation-controls grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div class="control-group">
-                                        <label for="count" class="block mb-2 font-medium text-gray-300">Number of Tracks</label>
+                                        <label for="count" class="block mb-2 font-medium text-gray-300">Number of Tracks
+                                            <span class="tooltip-trigger inline-block ml-1 cursor-help text-gray-400" data-tooltip="count">?</span>
+                                        </label>
                                         <input type="number" id="count" value="20" min="1" max="50" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
+                                        <div id="tooltip-count" class="tooltip hidden absolute bg-gray-800 text-white text-sm p-2 rounded shadow-lg max-w-xs z-10">
+                                            Determines how many tracks will be recommended. A higher number increases variety but may include less relevant suggestions.
+                                        </div>
                                     </div>
                                     <div class="control-group">
-                                        <label for="discovery-level" class="block mb-2 font-medium text-gray-300">Discovery Level (0-100)</label>
+                                        <label for="discovery-level" class="block mb-2 font-medium text-gray-300">Discovery Level (0-100)
+                                            <span class="tooltip-trigger inline-block ml-1 cursor-help text-gray-400" data-tooltip="discovery-level">?</span>
+                                        </label>
                                         <input type="number" id="discovery-level" value="50" min="0" max="100" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
                                         <p class="text-xs text-gray-400 mt-1">0 = Familiar tracks, 100 = New discoveries</p>
+                                        <div id="tooltip-discovery-level" class="tooltip hidden absolute bg-gray-800 text-white text-sm p-2 rounded shadow-lg max-w-xs z-10">
+                                            Controls how much the recommendations deviate from your usual listening habits. Lower values prioritize familiar artists and styles, while higher values focus on discovering new music.
+                                        </div>
                                     </div>
                                     <div class="control-group">
-                                        <label for="min-year" class="block mb-2 font-medium text-gray-300">Minimum Year</label>
+                                        <label for="min-year" class="block mb-2 font-medium text-gray-300">Minimum Year
+                                            <span class="tooltip-trigger inline-block ml-1 cursor-help text-gray-400" data-tooltip="min-year">?</span>
+                                        </label>
                                         <input type="number" id="min-year" value="1900" min="1900" max="2025" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
+                                        <div id="tooltip-min-year" class="tooltip hidden absolute bg-gray-800 text-white text-sm p-2 rounded shadow-lg max-w-xs z-10">
+                                            Filters out tracks released before this year. Use this to focus on more recent music or specific eras.
+                                        </div>
                                     </div>
                                     <div class="control-group">
-                                        <label for="max-popularity" class="block mb-2 font-medium text-gray-300">Maximum Popularity (0-100)</label>
+                                        <label for="max-popularity" class="block mb-2 font-medium text-gray-300">Maximum Popularity (0-100)
+                                            <span class="tooltip-trigger inline-block ml-1 cursor-help text-gray-400" data-tooltip="max-popularity">?</span>
+                                        </label>
                                         <input type="number" id="max-popularity" value="100" min="0" max="100" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
                                         <p class="text-xs text-gray-400 mt-1">Lower values = Less popular tracks</p>
+                                        <div id="tooltip-max-popularity" class="tooltip hidden absolute bg-gray-800 text-white text-sm p-2 rounded shadow-lg max-w-xs z-10">
+                                            Limits how popular the recommended tracks can be. Lower values help uncover hidden gems that are less mainstream.
+                                        </div>
                                     </div>
                                     <div class="control-group">
-                                        <label for="tempo" class="block mb-2 font-medium text-gray-300">Target Tempo</label>
+                                        <label for="tempo" class="block mb-2 font-medium text-gray-300">Target Tempo
+                                            <span class="tooltip-trigger inline-block ml-1 cursor-help text-gray-400" data-tooltip="tempo">?</span>
+                                        </label>
                                         <select id="tempo" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
                                             <option value="">Any</option>
                                             <option value="slow">Slow (40-90 BPM)</option>
@@ -154,9 +176,14 @@
                                             <option value="fast">Fast (140-200 BPM)</option>
                                         </select>
                                         <p class="text-xs text-gray-400 mt-1">Approximate beats per minute</p>
+                                        <div id="tooltip-tempo" class="tooltip hidden absolute bg-gray-800 text-white text-sm p-2 rounded shadow-lg max-w-xs z-10">
+                                            Influences the speed of the recommended tracks. Slow tempos are great for relaxation, while fast tempos are ideal for workouts or dancing.
+                                        </div>
                                     </div>
                                     <div class="control-group">
-                                        <label for="energy" class="block mb-2 font-medium text-gray-300">Target Energy</label>
+                                        <label for="energy" class="block mb-2 font-medium text-gray-300">Target Energy
+                                            <span class="tooltip-trigger inline-block ml-1 cursor-help text-gray-400" data-tooltip="energy">?</span>
+                                        </label>
                                         <select id="energy" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
                                             <option value="">Any</option>
                                             <option value="low">Low (Calm)</option>
@@ -164,14 +191,27 @@
                                             <option value="high">High (Energetic)</option>
                                         </select>
                                         <p class="text-xs text-gray-400 mt-1">Energy level of the tracks</p>
+                                        <div id="tooltip-energy" class="tooltip hidden absolute bg-gray-800 text-white text-sm p-2 rounded shadow-lg max-w-xs z-10">
+                                            Affects the intensity of the music. Low energy tracks are more mellow and calming, while high energy tracks are upbeat and lively.
+                                        </div>
                                     </div>
                                     <div class="control-group col-span-1 md:col-span-2">
-                                        <label for="genres" class="block mb-2 font-medium text-gray-300">Genres (comma-separated)</label>
+                                        <label for="genres" class="block mb-2 font-medium text-gray-300">Genres (comma-separated)
+                                            <span class="tooltip-trigger inline-block ml-1 cursor-help text-gray-400" data-tooltip="genres">?</span>
+                                        </label>
                                         <input type="text" id="genres" placeholder="e.g., pop, rock, indie" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
+                                        <div id="tooltip-genres" class="tooltip hidden absolute bg-gray-800 text-white text-sm p-2 rounded shadow-lg max-w-xs z-10">
+                                            Specify genres to narrow down recommendations to specific musical styles. Use autocomplete suggestions for recognized genres.
+                                        </div>
                                     </div>
                                     <div class="control-group col-span-1 md:col-span-2">
-                                        <label for="moods" class="block mb-2 font-medium text-gray-300">Moods (comma-separated)</label>
+                                        <label for="moods" class="block mb-2 font-medium text-gray-300">Moods (comma-separated)
+                                            <span class="tooltip-trigger inline-block ml-1 cursor-help text-gray-400" data-tooltip="moods">?</span>
+                                        </label>
                                         <input type="text" id="moods" placeholder="e.g., happy, chill, energetic" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
+                                        <div id="tooltip-moods" class="tooltip hidden absolute bg-gray-800 text-white text-sm p-2 rounded shadow-lg max-w-xs z-10">
+                                            Describe the emotional tone you're looking for. This helps tailor recommendations to match your current mood or desired atmosphere.
+                                        </div>
                                     </div>
                                 </div>
                                 <button id="generate-btn" class="btn btn-primary create-playlist-btn mt-6 px-6 py-3 rounded-full text-lg font-semibold">Generate Recommendations</button>
@@ -269,6 +309,28 @@
                 const tabId = button.getAttribute('data-tab');
                 document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
                 document.getElementById(tabId).classList.add('active');
+            });
+        });
+
+        // Tooltip functionality
+        document.querySelectorAll('.tooltip-trigger').forEach(trigger => {
+            trigger.addEventListener('mouseenter', function() {
+                const tooltipId = 'tooltip-' + this.getAttribute('data-tooltip');
+                const tooltip = document.getElementById(tooltipId);
+                if (tooltip) {
+                    tooltip.classList.remove('hidden');
+                    // Position tooltip relative to the trigger
+                    const rect = this.getBoundingClientRect();
+                    tooltip.style.top = `${rect.bottom + window.scrollY + 5}px`;
+                    tooltip.style.left = `${rect.left + window.scrollX}px`;
+                }
+            });
+            trigger.addEventListener('mouseleave', function() {
+                const tooltipId = 'tooltip-' + this.getAttribute('data-tooltip');
+                const tooltip = document.getElementById(tooltipId);
+                if (tooltip) {
+                    tooltip.classList.add('hidden');
+                }
             });
         });
     </script>
