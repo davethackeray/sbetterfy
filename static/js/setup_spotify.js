@@ -45,6 +45,18 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
+        // Additional validation for Client ID format (should be a 32-character hexadecimal string)
+        if (!/^[0-9a-fA-F]{32}$/.test(clientId)) {
+            showError('Client ID must be a 32-character hexadecimal string');
+            return;
+        }
+        
+        // Additional validation for Client Secret format (should be a 64-character hexadecimal string)
+        if (!/^[0-9a-fA-F]{64}$/.test(clientSecret)) {
+            showError('Client Secret must be a 64-character hexadecimal string');
+            return;
+        }
+        
         // Disable button and show loading state
         saveCredsBtn.disabled = true;
         saveCredsBtn.textContent = 'Saving...';

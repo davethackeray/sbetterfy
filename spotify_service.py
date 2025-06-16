@@ -11,7 +11,10 @@ class SpotifyService:
     def __init__(self, client_id=None, client_secret=None, tokens=None):
         self.client_id = client_id
         self.client_secret = client_secret
-        self.redirect_uri = os.environ.get('BASE_URL', '') + '/callback'
+        base_url = os.environ.get('BASE_URL', 'http://127.0.0.1:8888')
+        if base_url == 'http://localhost:8080':
+            base_url = 'http://127.0.0.1:8888'
+        self.redirect_uri = base_url + '/callback'
         self.tokens = tokens
         self.base_url = 'https://api.spotify.com/v1'
         # In-memory cache for API responses
@@ -55,14 +58,15 @@ class SpotifyService:
         if state:
             params['state'] = state
             
-        return f"https://accounts.spotify.com/authorize?{urlencode(params)}"
+        return f"https://accounts.spotify.com/authorize?{urlencode(params)}", self._code_verifier
     
-    def get_tokens(self, code):
+    def get_tokens(self, code, code_verifier=None):
         """Exchange authorization code for access and refresh tokens with PKCE"""
         if not self.client_id or not self.client_secret:
             raise ValueError("Spotify credentials not configured")
             
-        if not self._code_verifier:
+        verifier = code_verifier if code_verifier else self._code_verifier
+        if not verifier:
             raise ValueError("Code verifier not set for PKCE flow")
             
         auth_header = base64.b64encode(f"{self.client_id}:{self.client_secret}".encode()).decode()
@@ -74,7 +78,7 @@ class SpotifyService:
             'grant_type': 'authorization_code',
             'code': code,
             'redirect_uri': self.redirect_uri,
-            'code_verifier': self._code_verifier
+            'code_verifier': verifier
         }
         
         response = requests.post('https://accounts.spotify.com/api/token', headers=headers, data=data)
@@ -82,16 +86,19 @@ class SpotifyService:
         if response.status_code != 200:
             return None
         
-        # Clear the code verifier after use
-        self._code_verifier = None
+        # Clear the code verifier after use if it was set in this instance
+        if not code_verifier:
+            self._code_verifier = None
         return response.json()
     
     def refresh_token(self):
         """Refresh the access token using the refresh token"""
         if not self.tokens or 'refresh_token' not in self.tokens:
+            print("Error: No refresh token available for token refresh.")
             return False
         
         if not self.client_id or not self.client_secret:
+            print("Error: Spotify client credentials not configured for token refresh.")
             return False
             
         auth_header = base64.b64encode(f"{self.client_id}:{self.client_secret}".encode()).decode()
@@ -104,17 +111,21 @@ class SpotifyService:
             'refresh_token': self.tokens['refresh_token']
         }
         
-        response = requests.post('https://accounts.spotify.com/api/token', headers=headers, data=data)
-        
-        if response.status_code != 200:
+        try:
+            response = requests.post('https://accounts.spotify.com/api/token', headers=headers, data=data)
+            if response.status_code != 200:
+                print(f"Error: Token refresh failed with status {response.status_code}. Response: {response.text}")
+                return False
+            
+            new_tokens = response.json()
+            self.tokens['access_token'] = new_tokens['access_token']
+            if 'refresh_token' in new_tokens:
+                self.tokens['refresh_token'] = new_tokens['refresh_token']
+            print("Token refresh successful.")
+            return True
+        except Exception as e:
+            print(f"Error during token refresh: {str(e)}")
             return False
-        
-        new_tokens = response.json()
-        self.tokens['access_token'] = new_tokens['access_token']
-        if 'refresh_token' in new_tokens:
-            self.tokens['refresh_token'] = new_tokens['refresh_token']
-        
-        return True
     
     def _get_cache_key(self, endpoint, params=None):
         """Generate a unique cache key based on endpoint and parameters"""
@@ -153,6 +164,7 @@ class SpotifyService:
     def make_api_request(self, endpoint, method='GET', data=None, params=None, cache_expiry=None):
         """Make a request to the Spotify API with automatic token refresh and caching for GET requests"""
         if not self.tokens:
+            print("Error: No tokens available for API request.")
             return None
         
         # For GET requests, check cache first
@@ -169,21 +181,34 @@ class SpotifyService:
         
         try:
             if method == 'GET':
-                response = requests.get(url, headers=headers, params=params)
+                response = requests.get(url, headers=headers, params=params, timeout=10)
             elif method == 'POST':
                 headers['Content-Type'] = 'application/json'
-                response = requests.post(url, headers=headers, json=data)
+                response = requests.post(url, headers=headers, json=data, timeout=10)
             elif method == 'PUT':
                 headers['Content-Type'] = 'application/json'
-                response = requests.put(url, headers=headers, json=data)
+                response = requests.put(url, headers=headers, json=data, timeout=10)
             else:
+                print(f"Error: Unsupported HTTP method {method}.")
                 return None
             
-            # If token expired, refresh and retry
-            if response.status_code == 401 and self.refresh_token():
-                return self.make_api_request(endpoint, method, data, params, cache_expiry)
+            # If token expired, attempt refresh and retry once
+            if response.status_code == 401:
+                print("Token expired, attempting refresh.")
+                if self.refresh_token():
+                    headers['Authorization'] = f"Bearer {self.tokens['access_token']}"
+                    if method == 'GET':
+                        response = requests.get(url, headers=headers, params=params, timeout=10)
+                    elif method == 'POST':
+                        response = requests.post(url, headers=headers, json=data, timeout=10)
+                    elif method == 'PUT':
+                        response = requests.put(url, headers=headers, json=data, timeout=10)
+                else:
+                    print("Error: Token refresh failed, cannot retry API request.")
+                    return None
             
             if response.status_code not in (200, 201):
+                print(f"Error: API request failed with status {response.status_code}. Response: {response.text}")
                 return None
             
             response_data = response.json()
@@ -193,7 +218,11 @@ class SpotifyService:
                 self._set_to_cache(cache_key, response_data, expiry)
             
             return response_data
-        except Exception:
+        except requests.exceptions.RequestException as e:
+            print(f"Network error during API request: {str(e)}")
+            return None
+        except Exception as e:
+            print(f"Unexpected error during API request: {str(e)}")
             return None
     
     def get_user_profile(self, access_token=None):
@@ -246,7 +275,7 @@ class SpotifyService:
         # Get user ID
         user_profile = self.get_user_profile()
         if not user_profile:
-            return None
+            return {"success": False, "message": "Failed to retrieve user profile. Please authenticate again."}
         
         user_id = user_profile['id']
         
@@ -259,15 +288,20 @@ class SpotifyService:
         
         playlist = self.make_api_request(f'users/{user_id}/playlists', method='POST', data=data)
         if not playlist:
-            return None
+            return {"success": False, "message": "Failed to create playlist. Please try again."}
         
         # Add tracks to playlist (in batches of 100)
         playlist_id = playlist['id']
+        added_tracks = 0
         
         for i in range(0, len(track_uris), 100):
             batch = track_uris[i:i+100]
             data = {'uris': batch}
-            self.make_api_request(f'playlists/{playlist_id}/tracks', method='POST', data=data)
+            result = self.make_api_request(f'playlists/{playlist_id}/tracks', method='POST', data=data)
+            if result:
+                added_tracks += len(batch)
+            else:
+                return {"success": False, "message": f"Failed to add tracks to playlist. Only {added_tracks} tracks were added."}
         
         # Invalidate cache for user playlists to ensure updated list is fetched next time
         cache_key = self._get_cache_key(f'users/{user_id}/playlists')
@@ -276,10 +310,12 @@ class SpotifyService:
             del self._cache_timestamps[cache_key]
         
         return {
-            'id': playlist['id'],
-            'name': playlist['name'],
-            'url': playlist['external_urls']['spotify'],
-            'tracks': len(track_uris)
+            "success": True,
+            "message": f"Playlist '{playlist['name']}' created successfully with {added_tracks} tracks.",
+            "id": playlist['id'],
+            "name": playlist['name'],
+            "external_url": playlist['external_urls']['spotify'],
+            "track_count": added_tracks
         }
     
     def search_tracks(self, query, limit=10):
@@ -309,19 +345,31 @@ class SpotifyService:
             })
         
         return tracks
+    
+    def get_available_genres(self):
+        """Get a list of available genre seeds for recommendations from Spotify API"""
+        response = self.make_api_request('recommendations/available-genre-seeds', cache_expiry=self._extended_cache_expiry)
+        
+        if not response or 'genres' not in response:
+            return []
+        
+        return response['genres']
         
     def validate_credentials(self):
-        """Validate that the Spotify credentials are working"""
+        """Validate that the Spotify credentials are working using client credentials flow"""
         try:
             auth_header = base64.b64encode(f"{self.client_id}:{self.client_secret}".encode()).decode()
             headers = {
                 'Authorization': f'Basic {auth_header}',
+                'Content-Type': 'application/x-www-form-urlencoded'
             }
-            response = requests.get('https://accounts.spotify.com/api/token', headers=headers)
-            # We expect a 400 with invalid_client error if credentials are wrong
-            # We expect a 400 with invalid_request error if credentials are correct but request is incomplete
-            if response.status_code == 400 and 'error' in response.json():
-                return response.json()['error'] != 'invalid_client'
+            data = {
+                'grant_type': 'client_credentials'
+            }
+            response = requests.post('https://accounts.spotify.com/api/token', headers=headers, data=data)
+            if response.status_code == 200:
+                return True
             return False
-        except Exception:
+        except Exception as e:
+            print(f"Error validating Spotify credentials: {str(e)}")
             return False

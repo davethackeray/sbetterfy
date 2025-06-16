@@ -15,9 +15,19 @@ def index():
 
 @auth_bp.route('/login')
 def login():
-    user_id = str(uuid.uuid4())  # Generate temp ID until Spotify auth
-    session['temp_user_id'] = user_id
-    return render_template('setup_spotify.html', base_url=os.environ.get('BASE_URL', request.url_root.rstrip('/')))
+    import logging
+    logging.info("Entering login route")
+    try:
+        user_id = str(uuid.uuid4())  # Generate temp ID until Spotify auth
+        session['temp_user_id'] = user_id
+        base_url = os.environ.get('BASE_URL', request.url_root.rstrip('/'))
+        logging.info(f"Generated user_id: {user_id}, base_url: {base_url}")
+        rendered_template = render_template('setup_spotify.html', base_url=base_url)
+        logging.info("Successfully rendered setup_spotify.html")
+        return rendered_template
+    except Exception as e:
+        logging.error(f"Error in login route: {str(e)}")
+        raise
 
 @auth_bp.route('/authorize-spotify')
 def authorize_spotify():
@@ -32,7 +42,10 @@ def authorize_spotify():
         return redirect(url_for('auth.login'))
     
     sp = SpotifyService(creds['client_id'], creds['client_secret'])
-    return redirect(sp.get_auth_url(user_id))
+    auth_url, code_verifier = sp.get_auth_url(user_id)
+    user_service.save_code_verifier(user_id, code_verifier)
+    print(f"Stored code_verifier in database for user {user_id}: {code_verifier}")
+    return redirect(auth_url)
 
 @auth_bp.route('/callback')
 def callback():
@@ -57,10 +70,18 @@ def callback():
     
     # Exchange code for tokens
     sp = SpotifyService(creds['client_id'], creds['client_secret'])
-    tokens = sp.get_tokens(code)
+    code_verifier = user_service.get_code_verifier(user_id)
+    if not code_verifier:
+        print(f"Error: Code verifier not found in database for user {user_id}")
+        flash("Authorization failed: Session data missing. Please try again.", "error")
+        return redirect(url_for('auth.login'))
+    print(f"Retrieved code_verifier from database for user {user_id}: {code_verifier}")
+    tokens = sp.get_tokens(code, code_verifier)
     if not tokens:
+        print(f"Error: Failed to obtain tokens for user {user_id}")
         flash("Failed to obtain tokens from Spotify. Please check your credentials and try again.", "error")
         return redirect(url_for('auth.login'))
+    user_service.clear_code_verifier(user_id)
     
     # Get user profile
     user_profile = sp.get_user_profile(tokens['access_token'])

@@ -93,7 +93,7 @@
         <header>
             <div class="logo">Spotify AI Recommendations</div>
             <div class="user-info">
-                <a href="{{ url_for('index') }}" class="btn btn-small">Back to Home</a>
+    <a href="{{ url_for('auth.index') }}" class="btn btn-small">Back to Home</a>
             </div>
         </header>
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -148,7 +148,7 @@
                                         <ul class="ml-6 mt-2 text-gray-300">
                                             <li class="mb-1">App name: "AI Music Recommendations" (or any name you prefer)</li>
                                             <li class="mb-1">App description: "Personal app for AI music recommendations"</li>
-                                            <li class="mb-1">Redirect URI: <code class="bg-gray-800 p-1 rounded">{{ base_url }}/callback</code></li>
+                                            <li class="mb-1">Redirect URI: <code class="bg-gray-800 p-1 rounded">{{ base_url }}/callback</code> (Ensure this matches exactly in your Spotify Developer Dashboard. Note: Spotify may require a secure URL (HTTPS) or a specific format for non-localhost URIs. For development, ensure 'localhost' is allowed in your Spotify settings)</li>
                                             <li class="mb-1">Website: <code class="bg-gray-800 p-1 rounded">{{ base_url }}</code></li>
                                         </ul>
                                     </div>
@@ -227,7 +227,7 @@
                         </div>
                         <div id="spotify-success-message" class="success-message hidden mt-6 text-center">
                             <p class="text-green-400 text-lg mb-4">✅ Spotify credentials saved successfully!</p>
-                            <a href="{{ url_for('authorize_spotify') }}" class="btn btn-primary bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full">Connect with Spotify</a>
+                            <a href="{{ url_for('auth.authorize_spotify') }}" class="btn btn-primary bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full">Connect with Spotify</a>
                         </div>
                     </div>
                 </div>

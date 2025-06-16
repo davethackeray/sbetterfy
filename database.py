@@ -23,6 +23,7 @@ class User(Base):
     spotify_refresh_token = Column(Text)
     gemini_api_key = Column(Text)
     encryption_key = Column(Text)
+    code_verifier = Column(Text)
     
     __table_args__ = (
         Index('idx_user_id', 'id'),

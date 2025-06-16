@@ -42,7 +42,7 @@
                 {% if 'user_id' in session %}
                     <a href="{{ url_for('dashboard') }}" class="btn btn-primary bg-green-500 hover:bg-green-600 text-white px-3 py-1 md:px-4 md:py-2 rounded-full text-sm md:text-base">Go to Dashboard</a>
                 {% else %}
-                    <a href="{{ url_for('login') }}" class="btn btn-primary bg-green-500 hover:bg-green-600 text-white px-3 py-1 md:px-4 md:py-2 rounded-full text-sm md:text-base">Get Started</a>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary bg-green-500 hover:bg-green-600 text-white px-3 py-1 md:px-4 md:py-2 rounded-full text-sm md:text-base">Get Started</a>
                 {% endif %}
             </div>
         </header>
@@ -68,7 +68,7 @@
                 {% if 'user_id' in session %}
                     <a href="{{ url_for('dashboard') }}" class="btn btn-primary bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-full text-lg font-semibold">Go to Dashboard</a>
                 {% else %}
-                    <a href="{{ url_for('login') }}" class="btn btn-primary bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-full text-lg font-semibold">Get Started Now</a>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-full text-lg font-semibold">Get Started Now</a>
                 {% endif %}
             </section>
 

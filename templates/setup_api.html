@@ -93,7 +93,7 @@
         <header>
             <div class="logo">Spotify AI Recommendations</div>
             <div class="user-info">
-                <a href="{{ url_for('index') }}" class="btn btn-small">Back to Home</a>
+<a href="{{ url_for('auth.index') }}" class="btn btn-small">Back to Home</a>
             </div>
         </header>
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -204,7 +204,7 @@
                         </div>
                         <div id="success-message" class="success-message hidden mt-6 text-center">
                             <p class="text-green-400 text-lg mb-4">✅ API key saved successfully!</p>
-                            <a href="{{ url_for('dashboard') }}" class="btn btn-primary bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full">Go to Dashboard</a>
+<a href="{{ url_for('auth.dashboard') }}" class="btn btn-primary bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full">Go to Dashboard</a>
                         </div>
                     </div>
                 </div>

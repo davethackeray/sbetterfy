@@ -6,7 +6,7 @@ class RecommendationService:
     def __init__(self, api_key):
         self.api_key = api_key
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel("gemini-1.5-flash")
+        self.model = genai.GenerativeModel("gemini-2.5-flash-preview-05-20")
     
     def validate_api_key(self):
         """Validate that the API key works"""
@@ -38,7 +38,9 @@ class RecommendationService:
         # Generate recommendations
         try:
             response = self.model.generate_content(prompt)
+            print("Gemini API Response:", response.text)
             recommendations = self._parse_recommendations(response.text)
+            print("Parsed Recommendations:", recommendations)
             
             # Verify songs on Spotify in batches to reduce API call overhead
             verified_recommendations = []
@@ -64,8 +66,10 @@ class RecommendationService:
                     if len(verified_recommendations) >= count:
                         return verified_recommendations
             
+            print("Verified Recommendations:", verified_recommendations)
             return verified_recommendations
         except Exception as e:
+            print("Error in recommendation process:", str(e))
             raise Exception(f"Error generating recommendations: {str(e)}")
     
     def _create_recommendation_prompt(self, liked_songs, count, discovery_level, min_year, max_popularity, genres=None, moods=None):

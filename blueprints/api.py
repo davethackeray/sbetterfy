@@ -211,3 +211,33 @@ def create_playlist():
         return jsonify({"error": "Failed to create playlist"}), 500
     
     return jsonify(playlist)
+
+@api_bp.route('/api/genres', methods=['GET'])
+def get_genres():
+    if 'user_id' not in session:
+        return jsonify({"error": "Not authenticated"}), 401
+    
+    user_id = session['user_id']
+    
+    # Get Spotify credentials and tokens
+    spotify_creds = user_service.get_spotify_credentials(user_id)
+    if not spotify_creds:
+        return jsonify({"error": "Spotify credentials not set"}), 400
+        
+    spotify_tokens = user_service.get_spotify_tokens(user_id)
+    if not spotify_tokens:
+        return jsonify({"error": "Spotify authentication failed"}), 400
+    
+    # Initialize Spotify service
+    spotify = SpotifyService(
+        spotify_creds['client_id'], 
+        spotify_creds['client_secret'], 
+        spotify_tokens
+    )
+    
+    # Fetch available genres
+    genres = spotify.get_available_genres()
+    if not genres:
+        return jsonify({"error": "Failed to fetch genres from Spotify"}), 500
+    
+    return jsonify({"genres": genres})

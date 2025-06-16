@@ -44,6 +44,12 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
     
+    // Additional validation for API key format (should start with 'AIza' for Google AI API keys)
+    if (!apiKey.startsWith('AIza')) {
+      showError('API key appears invalid. Google Gemini AI API keys typically start with "AIza".');
+      return;
+    }
+    
     // Disable button and show loading state
     saveApiKeyBtn.disabled = true;
     saveApiKeyBtn.textContent = 'Saving...';

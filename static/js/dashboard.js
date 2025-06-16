@@ -11,9 +11,101 @@ document.addEventListener('DOMContentLoaded', function() {
     const feedbackError = document.getElementById('feedback-error');
     const feedbackSuccess = document.getElementById('feedback-success');
     const submitFeedbackBtn = document.getElementById('submit-feedback-btn');
+    const genresInput = document.getElementById('genres');
 
     let recommendedTracks = [];
     let selectedTracks = [];
+    let availableGenres = [];
+
+    // Fetch available genres for autocomplete
+    fetchGenres();
+
+    function fetchGenres() {
+        fetch('/api/genres', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(errorData => {
+                    throw new Error(errorData.error || 'Failed to fetch genres.');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            availableGenres = data.genres || [];
+            setupAutocomplete();
+        })
+        .catch(err => {
+            console.error('Error fetching genres:', err);
+        });
+    }
+
+    function setupAutocomplete() {
+        if (!genresInput) return;
+
+        genresInput.addEventListener('input', function(e) {
+            const value = e.target.value;
+            const lastCommaIndex = value.lastIndexOf(',');
+            const currentWord = lastCommaIndex === -1 ? value : value.substring(lastCommaIndex + 1).trim();
+            
+            if (currentWord.length >= 2) {
+                const suggestions = availableGenres.filter(genre => 
+                    genre.toLowerCase().startsWith(currentWord.toLowerCase())
+                );
+                
+                if (suggestions.length > 0) {
+                    showSuggestions(suggestions, lastCommaIndex);
+                } else {
+                    hideSuggestions();
+                }
+            } else {
+                hideSuggestions();
+            }
+        });
+
+        genresInput.addEventListener('blur', function() {
+            setTimeout(hideSuggestions, 200); // Delay to allow click on suggestion
+        });
+    }
+
+    function showSuggestions(suggestions, lastCommaIndex) {
+        let suggestionBox = document.getElementById('genre-suggestions');
+        if (!suggestionBox) {
+            suggestionBox = document.createElement('div');
+            suggestionBox.id = 'genre-suggestions';
+            suggestionBox.className = 'bg-gray-800 border border-gray-600 rounded-lg shadow-lg p-2 absolute z-10 max-h-40 overflow-y-auto';
+            suggestionBox.style.width = genresInput.offsetWidth + 'px';
+            suggestionBox.style.top = (genresInput.offsetTop + genresInput.offsetHeight + 5) + 'px';
+            suggestionBox.style.left = genresInput.offsetLeft + 'px';
+            genresInput.parentNode.appendChild(suggestionBox);
+        }
+        
+        suggestionBox.innerHTML = '';
+        suggestions.slice(0, 5).forEach(genre => {
+            const suggestionItem = document.createElement('div');
+            suggestionItem.className = 'p-2 hover:bg-gray-700 cursor-pointer text-white';
+            suggestionItem.textContent = genre;
+            suggestionItem.addEventListener('click', function() {
+                const currentValue = genresInput.value;
+                const newValue = lastCommaIndex === -1 ? genre : currentValue.substring(0, lastCommaIndex + 1) + ' ' + genre;
+                genresInput.value = newValue;
+                hideSuggestions();
+                genresInput.focus();
+            });
+            suggestionBox.appendChild(suggestionItem);
+        });
+    }
+
+    function hideSuggestions() {
+        const suggestionBox = document.getElementById('genre-suggestions');
+        if (suggestionBox) {
+            suggestionBox.remove();
+        }
+    }
 
     if (generateBtn) {
         generateBtn.addEventListener('click', function() {
@@ -85,11 +177,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(data => {
-                recommendedTracks = data.tracks || [];
+                console.log('Raw API response:', data);
+                recommendedTracks = data.tracks || (Array.isArray(data) ? data : []);
+                console.log('Processed recommendedTracks:', recommendedTracks);
                 selectedTracks = [];
                 renderTracks(recommendedTracks);
                 
                 if (recommendedTracks.length === 0) {
+                    noTracksMessage.textContent = "No recommendations could be verified with Spotify. Please try different parameters or generate again.";
                     noTracksMessage.classList.remove('hidden');
                     recommendationsResults.classList.add('hidden');
                 } else {
@@ -177,8 +272,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderTracks(tracks) {
+        console.log('Rendering tracks:', tracks);
         tracksContainer.innerHTML = '';
         if (!tracks || tracks.length === 0) {
+            console.log('No tracks to render.');
             return;
         }
 
@@ -186,10 +283,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const trackCard = document.createElement('div');
             trackCard.className = 'track-card';
             trackCard.innerHTML = `
-                <img src="${track.album.images[0]?.url || 'https://via.placeholder.com/48'}" alt="${track.name}" class="track-image">
-                <div class="track-info">
-                    <div class="font-medium text-white">${track.name}</div>
-                    <div class="text-sm text-gray-400">${track.artists.map(a => a.name).join(', ')}</div>
+                <div class="track-info flex-1">
+                    <div class="font-medium text-white">${track.title}</div>
+                    <div class="text-sm text-gray-400">${track.artist}</div>
                 </div>
                 <input type="checkbox" data-track-id="${track.uri}" class="ml-4 w-5 h-5 text-green-500 focus:ring-green-500 border-gray-600 bg-gray-700 rounded">
             `;
